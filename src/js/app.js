@@ -439,6 +439,19 @@ const autoSaveTimers = new Map(); // filePath -> timeout ID for debounced auto-s
 const swapWriteTimers = new Map(); // filePath -> timeout ID for debounced swap writes
 const statusCursor = document.getElementById('status-cursor');
 
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'avif', 'tiff', 'tif']);
+
+function isImageFile(filePath) {
+  const ext = filePath.split('.').pop()?.toLowerCase() || '';
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 // Configure marked for GFM
 marked.setOptions({
   gfm: true,
@@ -552,6 +565,16 @@ async function openFile(entry, targetLine) {
   if (openingFiles.has(entry.path)) return;
   openingFiles.add(entry.path);
 
+  // Image files — open as preview instead of text editor
+  if (isImageFile(entry.path)) {
+    try {
+      await openImageFile(entry);
+    } finally {
+      openingFiles.delete(entry.path);
+    }
+    return;
+  }
+
   let fileData;
   try {
     fileData = await invoke('read_file', { path: entry.path });
@@ -645,6 +668,57 @@ async function openFile(entry, targetLine) {
   invoke('watch_file', { path: entry.path }).catch(() => {});
 }
 
+async function openImageFile(entry) {
+  let imageData;
+  try {
+    imageData = await invoke('read_image_file', { path: entry.path });
+  } catch (err) {
+    console.error('Failed to read image:', err);
+    return;
+  }
+
+  fileTabCounter++;
+  const tabId = `file-${fileTabCounter}`;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'editor-wrapper';
+  wrapper.id = tabId;
+
+  const preview = document.createElement('div');
+  preview.className = 'image-preview';
+
+  const img = document.createElement('img');
+  img.src = `data:${imageData.mime};base64,${imageData.data}`;
+
+  const info = document.createElement('div');
+  info.className = 'image-info';
+
+  img.onload = () => {
+    info.textContent = `${img.naturalWidth} × ${img.naturalHeight}  ·  ${formatFileSize(imageData.size)}`;
+  };
+  img.onerror = () => {
+    info.textContent = 'Failed to load image';
+  };
+
+  preview.appendChild(img);
+  preview.appendChild(info);
+  wrapper.appendChild(preview);
+  terminalContainer.appendChild(wrapper);
+
+  const tab = {
+    id: tabId,
+    type: 'file',
+    name: imageData.file_name,
+    filePath: entry.path,
+    wrapper,
+    editorView: null,
+    modified: false,
+    isImage: true,
+  };
+
+  addFileTab(tab);
+}
+
 function updateBreadcrumb(filePath) {
   if (!filePath || !currentFolder) {
     breadcrumbBar.classList.add('hidden');
@@ -681,7 +755,7 @@ function updateBreadcrumb(filePath) {
 
 function toggleMarkdownPreview() {
   const tab = getActiveTab();
-  if (!tab || tab.type !== 'file') return;
+  if (!tab || tab.type !== 'file' || !tab.editorView) return;
 
   tab.previewActive = !tab.previewActive;
   btnMdPreview.classList.toggle('active', tab.previewActive);
@@ -911,26 +985,30 @@ async function init() {
   setActivationCallback((tab) => {
     if (tab?.type === 'file') {
       updateBreadcrumb(tab.filePath);
-      statusCursor.classList.remove('hidden');
 
-      // Show current cursor position
-      if (tab.editorView) {
-        const pos = tab.editorView.state.selection.main.head;
-        const line = tab.editorView.state.doc.lineAt(pos);
-        statusCursor.textContent = `Ln ${line.number}, Col ${pos - line.from + 1}`;
-      }
-
-      // Sync preview button with this tab's preview state
-      btnMdPreview.classList.toggle('active', !!tab.previewActive);
-      // Ensure correct visibility based on this tab's preview state
-      const cmEl = tab.wrapper.querySelector('.cm-editor');
-      const preview = tab.wrapper.querySelector('.md-preview');
-      if (tab.previewActive) {
-        if (cmEl) cmEl.style.display = 'none';
-        if (preview) preview.classList.add('active');
+      if (tab.isImage) {
+        statusCursor.classList.add('hidden');
       } else {
-        if (cmEl) cmEl.style.display = '';
-        if (preview) preview.classList.remove('active');
+        statusCursor.classList.remove('hidden');
+
+        // Show current cursor position
+        if (tab.editorView) {
+          const pos = tab.editorView.state.selection.main.head;
+          const line = tab.editorView.state.doc.lineAt(pos);
+          statusCursor.textContent = `Ln ${line.number}, Col ${pos - line.from + 1}`;
+        }
+
+        // Sync preview button with this tab's preview state
+        btnMdPreview.classList.toggle('active', !!tab.previewActive);
+        const cmEl = tab.wrapper.querySelector('.cm-editor');
+        const preview = tab.wrapper.querySelector('.md-preview');
+        if (tab.previewActive) {
+          if (cmEl) cmEl.style.display = 'none';
+          if (preview) preview.classList.add('active');
+        } else {
+          if (cmEl) cmEl.style.display = '';
+          if (preview) preview.classList.remove('active');
+        }
       }
     } else {
       breadcrumbBar.classList.add('hidden');

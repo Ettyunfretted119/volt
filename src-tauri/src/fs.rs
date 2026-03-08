@@ -1,3 +1,4 @@
+use base64::Engine;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -141,6 +142,64 @@ pub fn read_file(path: String) -> Result<FileContent, String> {
         language,
         file_name,
     })
+}
+
+// ── Image files ──
+
+#[derive(Debug, Serialize)]
+pub struct ImageContent {
+    pub data: String,
+    pub mime: String,
+    pub file_name: String,
+    pub size: u64,
+}
+
+fn detect_mime(ext: &str) -> Option<&'static str> {
+    match ext {
+        "png" => Some("image/png"),
+        "jpg" | "jpeg" => Some("image/jpeg"),
+        "gif" => Some("image/gif"),
+        "webp" => Some("image/webp"),
+        "bmp" => Some("image/bmp"),
+        "ico" => Some("image/x-icon"),
+        "avif" => Some("image/avif"),
+        "tiff" | "tif" => Some("image/tiff"),
+        _ => None,
+    }
+}
+
+#[tauri::command]
+pub fn read_image_file(path: String) -> Result<ImageContent, String> {
+    let file_path = Path::new(&path);
+    if !file_path.is_file() {
+        return Err(format!("Not a file: {}", path));
+    }
+
+    let metadata = fs::metadata(&path)
+        .map_err(|e| format!("Failed to read file metadata: {}", e))?;
+    let size = metadata.len();
+    if size > 20 * 1024 * 1024 {
+        return Err("Image too large (>20MB)".to_string());
+    }
+
+    let ext = file_path
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    let mime = detect_mime(&ext)
+        .ok_or_else(|| format!("Unsupported image format: {}", ext))?
+        .to_string();
+
+    let bytes = fs::read(&path)
+        .map_err(|e| format!("Failed to read image: {}", e))?;
+    let data = base64::engine::general_purpose::STANDARD.encode(&bytes);
+
+    let file_name = file_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    Ok(ImageContent { data, mime, file_name, size })
 }
 
 #[tauri::command]

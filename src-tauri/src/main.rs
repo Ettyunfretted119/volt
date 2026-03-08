@@ -57,6 +57,7 @@ fn main() {
             fs::read_directory,
             fs::open_in_file_manager,
             fs::read_file,
+            fs::read_image_file,
             fs::save_file,
             fs::create_file,
             fs::create_directory,
