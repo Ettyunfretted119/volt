@@ -238,6 +238,12 @@ export async function createTerminalTab() {
       return true; // no selection → normal SIGINT
     }
 
+    // Ctrl+Backspace — send ESC+DEL so shells/TUIs interpret it as "delete word"
+    if (e.ctrlKey && !e.shiftKey && e.key === 'Backspace') {
+      invoke('write_terminal', { id: ptyId, data: '\x1b\x7f' }).catch(() => {});
+      return false;
+    }
+
     // Ctrl+V — paste from clipboard
     if (e.ctrlKey && !e.shiftKey && e.key === 'v') {
       e.preventDefault(); // block browser paste event (xterm listens for it too)

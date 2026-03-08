@@ -226,6 +226,26 @@ async function loadLanguage(lang) {
         const { shell } = await import('@codemirror/legacy-modes/mode/shell');
         return StreamLanguage.define(shell);
       }
+      case 'go': {
+        const { StreamLanguage } = await import('@codemirror/language');
+        const { go } = await import('@codemirror/legacy-modes/mode/go');
+        return StreamLanguage.define(go);
+      }
+      case 'c': {
+        const { StreamLanguage } = await import('@codemirror/language');
+        const { c } = await import('@codemirror/legacy-modes/mode/clike');
+        return StreamLanguage.define(c);
+      }
+      case 'cpp': {
+        const { StreamLanguage } = await import('@codemirror/language');
+        const { cpp } = await import('@codemirror/legacy-modes/mode/clike');
+        return StreamLanguage.define(cpp);
+      }
+      case 'java': {
+        const { StreamLanguage } = await import('@codemirror/language');
+        const { java } = await import('@codemirror/legacy-modes/mode/clike');
+        return StreamLanguage.define(java);
+      }
       default:
         return [];
     }
