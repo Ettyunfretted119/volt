@@ -5,6 +5,7 @@ use tauri::Manager;
 mod config;
 mod flutter;
 mod fs;
+mod git;
 mod instance;
 mod lsp;
 mod pty;
@@ -68,6 +69,7 @@ fn main() {
             fs::write_swap_file,
             fs::check_swap_file,
             fs::delete_swap_file,
+            git::git_status,
             flutter::detect_project_type,
             flutter::list_emulators,
             flutter::launch_emulator,

@@ -9,6 +9,10 @@ let onFileClick = null;
 let onFileRenamed = null;
 let onFileDeleted = null;
 
+// Git status cache: relative path → status code ("M", "A", "D", "U")
+let gitStatusMap = {};
+let gitRoot = null;
+
 // Material icon theme manifest for file/folder icon resolution
 const iconManifest = generateManifest();
 const ICON_BASE = import.meta.env.DEV
@@ -59,12 +63,107 @@ export async function loadDirectory(path) {
   rootPath = path;
   fileTreeEl.innerHTML = '';
 
+  // Fetch git status in parallel with directory listing
+  const gitPromise = invoke('git_status', { path }).then(result => {
+    gitStatusMap = result.files;
+    gitRoot = result.root;
+  }).catch(() => {
+    gitStatusMap = {};
+    gitRoot = null;
+  });
+
   try {
     const ignored = ignoredPatterns || undefined;
-    const entries = await invoke('read_directory', { path, ignored });
+    const [entries] = await Promise.all([
+      invoke('read_directory', { path, ignored }),
+      gitPromise,
+    ]);
     renderEntries(fileTreeEl, entries, 0);
   } catch (err) {
     fileTreeEl.innerHTML = `<div style="padding:12px;color:#7a7a8a;">Failed to read directory</div>`;
+  }
+}
+
+export async function refreshGitStatus() {
+  if (!rootPath) return;
+  try {
+    const result = await invoke('git_status', { path: rootPath });
+    gitStatusMap = result.files;
+    gitRoot = result.root;
+  } catch {
+    gitStatusMap = {};
+    gitRoot = null;
+  }
+  applyGitStatusToTree();
+}
+
+function getGitStatus(entryPath) {
+  if (!gitRoot) return null;
+  // Normalize to forward slashes and compute relative path from git root
+  const normalized = entryPath.replace(/\\/g, '/');
+  const root = gitRoot.replace(/\\/g, '/');
+  const relative = normalized.startsWith(root + '/')
+    ? normalized.slice(root.length + 1)
+    : normalized.startsWith(root) ? normalized.slice(root.length + 1) : null;
+  if (!relative) return null;
+  return gitStatusMap[relative] || null;
+}
+
+function getFolderGitStatus(entryPath) {
+  if (!gitRoot) return null;
+  const normalized = entryPath.replace(/\\/g, '/');
+  const root = gitRoot.replace(/\\/g, '/');
+  const prefix = normalized.startsWith(root + '/')
+    ? normalized.slice(root.length + 1) + '/'
+    : null;
+  if (!prefix) return null;
+  for (const key of Object.keys(gitStatusMap)) {
+    if (key.startsWith(prefix)) return true;
+  }
+  return null;
+}
+
+function applyGitStatusToTree() {
+  const items = fileTreeEl.querySelectorAll('.tree-item');
+  items.forEach(item => {
+    const path = item.dataset.path;
+    const isDir = item.dataset.isDir === 'true';
+    const nameEl = item.querySelector('.tree-name');
+    const badge = item.querySelector('.git-badge');
+
+    // Remove old badge and color
+    if (badge) badge.remove();
+    if (nameEl) nameEl.classList.remove('git-modified', 'git-untracked', 'git-added', 'git-deleted');
+
+    if (isDir) {
+      const dirty = getFolderGitStatus(path);
+      const dot = item.querySelector('.git-dot');
+      if (dot) dot.remove();
+      if (dirty) {
+        const dotEl = document.createElement('span');
+        dotEl.className = 'git-dot';
+        item.appendChild(dotEl);
+      }
+    } else {
+      const status = getGitStatus(path);
+      if (status && nameEl) {
+        nameEl.classList.add(statusClass(status));
+        const badgeEl = document.createElement('span');
+        badgeEl.className = 'git-badge ' + statusClass(status);
+        badgeEl.textContent = status;
+        item.appendChild(badgeEl);
+      }
+    }
+  });
+}
+
+function statusClass(status) {
+  switch (status) {
+    case 'M': return 'git-modified';
+    case 'U': case '?': return 'git-untracked';
+    case 'A': return 'git-added';
+    case 'D': return 'git-deleted';
+    default: return 'git-modified';
   }
 }
 
@@ -101,6 +200,24 @@ function renderEntries(container, entries, depth) {
     item.appendChild(chevron);
     item.appendChild(icon);
     item.appendChild(name);
+
+    // Git status indicators
+    if (entry.is_dir) {
+      if (getFolderGitStatus(entry.path)) {
+        const dot = document.createElement('span');
+        dot.className = 'git-dot';
+        item.appendChild(dot);
+      }
+    } else {
+      const gitSt = getGitStatus(entry.path);
+      if (gitSt) {
+        name.classList.add(statusClass(gitSt));
+        const badge = document.createElement('span');
+        badge.className = 'git-badge ' + statusClass(gitSt);
+        badge.textContent = gitSt;
+        item.appendChild(badge);
+      }
+    }
 
     if (entry.is_dir) {
       const children = document.createElement('div');

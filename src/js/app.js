@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
-import { initFileTree, loadDirectory, setIgnoredPatterns, setFileClickHandler, setFileRenamedHandler, setFileDeletedHandler } from './file-tree.js';
+import { initFileTree, loadDirectory, setIgnoredPatterns, setFileClickHandler, setFileRenamedHandler, setFileDeletedHandler, refreshGitStatus } from './file-tree.js';
 import { initTerminals, createTerminalTab, getActiveTerminalCount, setTerminalConfig, addFileTab, findTabByFilePath, getActiveTab, getUnsavedFileTabs, getAllTabs, closeAllTabs, setActivationCallback, getTerminalConfig, renderTabs, activateTab, setTabCloseCallback, updateFileTabPath, getFileTabsByPathPrefix, forceCloseFileTab } from './terminal.js';
 import { createEditorView, getEditorContent, markClean, replaceEditorContent, goToLine } from './editor.js';
 import { marked } from 'marked';
@@ -475,6 +475,8 @@ async function saveActiveFile(tab) {
     clearTimeout(swapWriteTimers.get(tab.filePath));
     swapWriteTimers.delete(tab.filePath);
     invoke('delete_swap_file', { path: tab.filePath }).catch(() => {});
+    // Refresh git status indicators after save
+    refreshGitStatus();
   } catch (err) {
     console.error('Failed to save file:', err);
   }
@@ -1024,7 +1026,7 @@ async function init() {
   document.getElementById('btn-open-folder-large').addEventListener('click', () => openFolder());
   document.getElementById('btn-open-folder-welcome').addEventListener('click', () => openFolder());
   document.getElementById('btn-refresh-tree').addEventListener('click', () => {
-    if (currentFolder) loadDirectory(currentFolder);
+    if (currentFolder) loadDirectory(currentFolder); // loadDirectory fetches git status internally
   });
   document.getElementById('btn-toggle-sidebar').addEventListener('click', toggleSidebar);
   document.getElementById('sidebar-title').addEventListener('click', closeFolder);
