@@ -238,9 +238,24 @@ export async function createTerminalTab() {
       return true; // no selection → normal SIGINT
     }
 
-    // Ctrl+Backspace — send ESC+DEL so shells/TUIs interpret it as "delete word"
+    // Ctrl+Backspace — delete previous word
     if (e.ctrlKey && !e.shiftKey && e.key === 'Backspace') {
-      invoke('write_terminal', { id: ptyId, data: '\x1b\x7f' }).catch(() => {});
+      let seq;
+      if (IS_WINDOWS) {
+        // ConPTY has two input processing modes depending on the child:
+        // - Standard (PSReadLine): translates VT → INPUT_RECORDs. Standard VT
+        //   can't encode Ctrl+Backspace, so we use win32-input-mode CSI format.
+        // - VT passthrough (Claude Code, vim, etc.): child enables
+        //   ENABLE_VIRTUAL_TERMINAL_INPUT, ConPTY passes bytes through directly.
+        //   Standard ESC+DEL works here.
+        // Detection: VT-aware apps enable bracketed paste mode (?2004h).
+        // PSReadLine on Windows never does (confirmed, no support as of v2.4.5).
+        const vtApp = terminal.modes.bracketedPasteMode;
+        seq = vtApp ? '\x1b\x7f' : '\x1b[8;14;127;1;8;1_';
+      } else {
+        seq = '\x1b\x7f';
+      }
+      invoke('write_terminal', { id: ptyId, data: seq }).catch(() => {});
       return false;
     }
 
