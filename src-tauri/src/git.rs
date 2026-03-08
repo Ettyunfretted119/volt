@@ -63,7 +63,6 @@ pub fn git_status(path: String) -> Result<GitStatus, String> {
     let output = Command::new("git")
         .arg("status")
         .arg("--porcelain")
-        .arg("-uall")
         .current_dir(git_root)
         .output()
         .map_err(|e| format!("Failed to run git: {}", e))?;

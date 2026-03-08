@@ -13,6 +13,9 @@ let onFileDeleted = null;
 let gitStatusMap = {};
 let gitRoot = null;
 
+// Guard against concurrent loadDirectory calls (race condition → duplicate entries)
+let loadGeneration = 0;
+
 // Material icon theme manifest for file/folder icon resolution
 const iconManifest = generateManifest();
 const ICON_BASE = import.meta.env.DEV
@@ -63,6 +66,9 @@ export async function loadDirectory(path) {
   rootPath = path;
   fileTreeEl.innerHTML = '';
 
+  // Increment generation so any in-flight call becomes stale
+  const thisGen = ++loadGeneration;
+
   // Fetch git status in parallel with directory listing
   const gitPromise = invoke('git_status', { path }).then(result => {
     gitStatusMap = result.files;
@@ -78,8 +84,14 @@ export async function loadDirectory(path) {
       invoke('read_directory', { path, ignored }),
       gitPromise,
     ]);
+
+    // If another loadDirectory call started while we were awaiting, bail out
+    // to prevent duplicate entries from appending to the same container
+    if (thisGen !== loadGeneration) return;
+
     renderEntries(fileTreeEl, entries, 0);
   } catch (err) {
+    if (thisGen !== loadGeneration) return;
     fileTreeEl.innerHTML = `<div style="padding:12px;color:#7a7a8a;">Failed to read directory</div>`;
   }
 }
