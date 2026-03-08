@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Internal docs
+docs/

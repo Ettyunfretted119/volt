@@ -1,0 +1,84 @@
+use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use std::collections::HashSet;
+use std::path::PathBuf;
+use std::sync::Mutex;
+use tauri::{AppHandle, Emitter};
+
+pub struct FileWatcherState {
+    watcher: Option<RecommendedWatcher>,
+    watched: HashSet<PathBuf>,
+}
+
+impl FileWatcherState {
+    pub fn new(app_handle: AppHandle) -> Self {
+        let watcher = RecommendedWatcher::new(
+            move |res: Result<Event, notify::Error>| {
+                if let Ok(event) = res {
+                    if matches!(
+                        event.kind,
+                        EventKind::Modify(_) | EventKind::Create(_)
+                    ) {
+                        for path in &event.paths {
+                            let path_str = path.to_string_lossy().to_string();
+                            let _ = app_handle.emit("file-changed", &path_str);
+                        }
+                    }
+                }
+            },
+            notify::Config::default(),
+        )
+        .ok();
+
+        Self {
+            watcher,
+            watched: HashSet::new(),
+        }
+    }
+}
+
+#[tauri::command]
+pub fn watch_file(
+    path: String,
+    state: tauri::State<'_, Mutex<FileWatcherState>>,
+) -> Result<(), String> {
+    let mut s = state.lock().map_err(|e| e.to_string())?;
+    let p = PathBuf::from(&path);
+    if s.watched.contains(&p) {
+        return Ok(());
+    }
+    if let Some(watcher) = &mut s.watcher {
+        watcher
+            .watch(&p, RecursiveMode::NonRecursive)
+            .map_err(|e| format!("Watch failed: {}", e))?;
+        s.watched.insert(p);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn unwatch_file(
+    path: String,
+    state: tauri::State<'_, Mutex<FileWatcherState>>,
+) -> Result<(), String> {
+    let mut s = state.lock().map_err(|e| e.to_string())?;
+    let p = PathBuf::from(&path);
+    if let Some(watcher) = &mut s.watcher {
+        let _ = watcher.unwatch(&p);
+    }
+    s.watched.remove(&p);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn unwatch_all_files(
+    state: tauri::State<'_, Mutex<FileWatcherState>>,
+) -> Result<(), String> {
+    let mut s = state.lock().map_err(|e| e.to_string())?;
+    let paths: Vec<PathBuf> = s.watched.drain().collect();
+    if let Some(watcher) = &mut s.watcher {
+        for p in &paths {
+            let _ = watcher.unwatch(p);
+        }
+    }
+    Ok(())
+}

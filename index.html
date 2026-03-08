@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volt</title>
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <span id="sidebar-title"><img src="/src-tauri/icons/32x32.png" alt="" class="sidebar-logo">VOLT</span>
+        <div id="sidebar-actions">
+          <button id="btn-open-folder" title="Open Folder (Ctrl+O)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M1.5 2.5h4l1.5 1.5h7.5v9h-13z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M1.5 6h13" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+          </button>
+          <button id="btn-refresh-tree" title="Refresh" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M13.5 8a5.5 5.5 0 1 1-1.5-3.8" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M13.5 2.5v3h-3" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            </svg>
+          </button>
+          <button id="btn-toggle-sidebar" title="Toggle Sidebar (Ctrl+B)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="sidebar-search" style="display:none;">
+        <input type="text" id="file-search" placeholder="Filter files..." />
+      </div>
+      <div id="file-tree"></div>
+      <div id="sidebar-empty">
+        <button id="btn-open-folder-large" class="open-folder-btn">Open Folder</button>
+      </div>
+    </aside>
+
+    <!-- Resize handle -->
+    <div id="sidebar-resizer"></div>
+
+    <!-- Main area -->
+    <main id="main-area">
+      <!-- Welcome hint (shown when no folder is open) -->
+      <div id="welcome-hint">
+        <div class="welcome-content">
+          <div class="welcome-logo">
+            <img src="/src-tauri/icons/128x128.png" alt="Volt" class="welcome-logo-img" />
+          </div>
+          <h1 class="welcome-title">VOLT</h1>
+          <p class="welcome-tagline">Lightweight terminal workstation</p>
+          <button id="btn-open-folder-welcome" class="welcome-open-btn">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <path d="M1.5 2.5h4l1.5 1.5h7.5v9h-13z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M1.5 6h13" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+            Open Folder
+          </button>
+          <div class="welcome-shortcuts">
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+P</kbd>
+              <span>Quick open file</span>
+            </div>
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+Shift+F</kbd>
+              <span>Find in files</span>
+            </div>
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+Shift+T</kbd>
+              <span>New terminal</span>
+            </div>
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+Shift+W</kbd>
+              <span>Close tab</span>
+            </div>
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+B</kbd>
+              <span>Toggle sidebar</span>
+            </div>
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+,</kbd>
+              <span>Settings</span>
+            </div>
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+Tab</kbd>
+              <span>Cycle through tabs</span>
+            </div>
+            <div class="welcome-shortcut">
+              <kbd>Ctrl+ +/-</kbd>
+              <span>Zoom in/out</span>
+            </div>
+          </div>
+          <div id="welcome-recents" class="welcome-recents hidden"></div>
+          <p class="welcome-version">v0.1.0</p>
+        </div>
+        <p class="welcome-credit">Made with 🤍 for U — Uforia</p>
+      </div>
+
+      <!-- Tab bar -->
+      <div id="tab-bar">
+        <div id="tab-list"></div>
+        <button id="btn-new-tab" title="New Terminal (Ctrl+Shift+T)">+</button>
+      </div>
+
+      <!-- Breadcrumb bar (shown for file tabs) -->
+      <div id="breadcrumb-bar" class="hidden">
+        <span id="breadcrumb-path"></span>
+        <button id="btn-md-preview" title="Toggle Markdown Preview">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/>
+            <path d="M3.5 10V6l2 2.5L7.5 6v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M10.5 8.5l1.5-2 1.5 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M12 6.5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          </svg>
+          Preview
+        </button>
+      </div>
+
+      <!-- Terminal container -->
+      <div id="terminal-container"></div>
+    </main>
+  </div>
+
+  <!-- Quick Open overlay -->
+  <div id="quick-open" class="hidden">
+    <div class="qo-backdrop"></div>
+    <div class="qo-dialog">
+      <input type="text" id="quick-open-input" placeholder="Go to file..." autocomplete="off" />
+      <div id="quick-open-results"></div>
+    </div>
+  </div>
+
+  <!-- Search overlay -->
+  <div id="search-panel" class="hidden">
+    <div class="search-backdrop"></div>
+    <div class="search-dialog">
+      <div class="search-header">
+        <input type="text" id="search-input" placeholder="Search in files..." autocomplete="off" />
+        <button id="search-close">&times;</button>
+      </div>
+      <div id="search-results"></div>
+      <div id="search-status"></div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <footer id="status-bar">
+    <div id="status-left">
+      <span id="status-lint" class="status-lint-group" title="No analysis active"></span>
+      <span id="status-folder"></span>
+      <span id="status-project-type" class="hidden"></span>
+    </div>
+    <div id="status-right">
+      <span id="status-cursor" class="hidden">Ln 1, Col 1</span>
+      <span id="status-resources">RAM: — | CPU: —</span>
+      <span class="status-credit">🤍 Uforia</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+</html>
