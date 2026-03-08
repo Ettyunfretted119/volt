@@ -22,7 +22,7 @@ VSCode/VSCodium uses 300–800 MB of RAM by bundling Chromium and running hundre
 
 - **Multi-tab terminals** — split your workflow across multiple terminal sessions with drag-to-reorder tabs
 - **File tree** — sidebar with material file icons, search filter, lazy-loaded directories
-- **Code editor** — CodeMirror 6 with syntax highlighting for JS, TS, Rust, Python, HTML, CSS, JSON, YAML, Markdown, Dart, TOML, Shell, and more
+- **Code editor** — CodeMirror 6 with syntax highlighting for JS, TS, Rust, Python, Go, C, C++, Java, HTML, CSS, JSON, YAML, Markdown, Dart, TOML, Shell
 - **Markdown preview** — toggle between edit and rendered preview for `.md` files
 - **Dynamic tab names** — terminal tabs update to show the running process
 - **Tab icons** — material file-type icons for file tabs, terminal icon for shells
@@ -83,6 +83,9 @@ cargo tauri dev
 | `Ctrl+F` | Find in current file |
 | `Ctrl+Shift+T` | New terminal |
 | `Ctrl+Shift+W` | Close tab |
+| `Ctrl+C` | Copy selection in terminal (SIGINT if no selection) |
+| `Ctrl+V` | Paste into terminal |
+| `Ctrl+Backspace` | Delete word backward in terminal |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
 | `Ctrl+B` | Toggle sidebar |
 | `Ctrl+,` | Settings |
