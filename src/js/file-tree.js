@@ -9,6 +9,10 @@ let onFileClick = null;
 let onFileRenamed = null;
 let onFileDeleted = null;
 
+// Undo toast state
+let activeToast = null;
+let toastTimer = null;
+
 // Git status cache: relative path → status code ("M", "A", "D", "U")
 let gitStatusMap = {};
 let gitRoot = null;
@@ -315,6 +319,77 @@ function showPrompt(title, defaultValue = '') {
   });
 }
 
+// ── Undo toast ──
+function dismissToast() {
+  if (!activeToast) return;
+  clearTimeout(toastTimer);
+  toastTimer = null;
+  const el = activeToast.element;
+  activeToast = null;
+  el.classList.add('dismissing');
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+}
+
+function showUndoToast(oldPath, newPath, oldName, newName, isDir) {
+  // Replace any existing toast
+  if (activeToast) {
+    clearTimeout(toastTimer);
+    activeToast.element.remove();
+    activeToast = null;
+  }
+
+  const el = document.createElement('div');
+  el.className = 'undo-toast';
+
+  const msg = document.createElement('span');
+  msg.className = 'undo-toast-message';
+  msg.textContent = 'Renamed ';
+
+  const nameEl = document.createElement('span');
+  nameEl.className = 'undo-toast-name';
+  nameEl.textContent = oldName;
+  msg.appendChild(nameEl);
+
+  const arrow = document.createTextNode(' \u2192 ');
+  msg.appendChild(arrow);
+
+  const newNameEl = document.createElement('span');
+  newNameEl.className = 'undo-toast-name';
+  newNameEl.textContent = newName;
+  msg.appendChild(newNameEl);
+
+  const undoBtn = document.createElement('button');
+  undoBtn.className = 'undo-toast-btn';
+  undoBtn.textContent = 'Undo';
+  undoBtn.addEventListener('click', async () => {
+    try {
+      await invoke('rename_path', { oldPath: newPath, newPath: oldPath });
+      if (onFileRenamed) onFileRenamed(newPath, oldPath, oldName, isDir);
+      await loadDirectory(rootPath);
+    } catch (err) {
+      console.error('Undo rename failed:', err);
+    }
+    dismissToast();
+  });
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'undo-toast-dismiss';
+  closeBtn.textContent = '\u00d7';
+  closeBtn.addEventListener('click', dismissToast);
+
+  const timer = document.createElement('div');
+  timer.className = 'undo-toast-timer';
+
+  el.appendChild(msg);
+  el.appendChild(undoBtn);
+  el.appendChild(closeBtn);
+  el.appendChild(timer);
+  document.body.appendChild(el);
+
+  activeToast = { element: el, oldPath, newPath, oldName, newName, isDir };
+  toastTimer = setTimeout(dismissToast, 5000);
+}
+
 // ── Context menu ──
 function addMenuItem(menu, label, action) {
   const item = document.createElement('div');
@@ -380,6 +455,7 @@ function showContextMenu(e, entry) {
         await invoke('rename_path', { oldPath: entry.path, newPath });
         if (onFileRenamed) onFileRenamed(entry.path, newPath, newName, entry.is_dir);
         await loadDirectory(rootPath);
+        showUndoToast(entry.path, newPath, entry.name, newName, entry.is_dir);
       } catch (err) { console.error(err); }
     });
 

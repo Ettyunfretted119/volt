@@ -16,6 +16,7 @@ dirs = "6"
 sysinfo = "0.34"
 notify = "8.2.0"
 base64 = "0.22"
+tokio = "1"
 
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.38"

@@ -277,7 +277,12 @@ pub fn delete_path(path: String) -> Result<(), String> {
 
 // ── Recursive file listing (for quick open) ──
 
-fn collect_files_recursive(dir: &Path, ignored: &[String], files: &mut Vec<PathBuf>) -> Result<(), String> {
+const MAX_DEPTH: usize = 64;
+
+fn collect_files_recursive(dir: &Path, ignored: &[String], files: &mut Vec<PathBuf>, depth: usize) -> Result<(), String> {
+    if depth >= MAX_DEPTH {
+        return Ok(());
+    }
     let entries = fs::read_dir(dir).map_err(|e| format!("Failed to read directory: {}", e))?;
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().to_string();
@@ -285,7 +290,7 @@ fn collect_files_recursive(dir: &Path, ignored: &[String], files: &mut Vec<PathB
         if name.starts_with('.') { continue; }
         let path = entry.path();
         if path.is_dir() {
-            collect_files_recursive(&path, ignored, files)?;
+            collect_files_recursive(&path, ignored, files, depth + 1)?;
         } else {
             files.push(path);
         }
@@ -294,7 +299,15 @@ fn collect_files_recursive(dir: &Path, ignored: &[String], files: &mut Vec<PathB
 }
 
 #[tauri::command]
-pub fn list_all_files(path: String, ignored: Option<Vec<String>>) -> Result<Vec<String>, String> {
+pub async fn list_all_files(path: String, ignored: Option<Vec<String>>) -> Result<Vec<String>, String> {
+    tokio::task::spawn_blocking(move || {
+        list_all_files_inner(path, ignored)
+    })
+    .await
+    .map_err(|e| format!("File listing task failed: {}", e))?
+}
+
+fn list_all_files_inner(path: String, ignored: Option<Vec<String>>) -> Result<Vec<String>, String> {
     let root = Path::new(&path);
     if !root.is_dir() {
         return Err(format!("Not a directory: {}", path));
@@ -303,7 +316,7 @@ pub fn list_all_files(path: String, ignored: Option<Vec<String>>) -> Result<Vec<
         DEFAULT_IGNORED.iter().map(|s| s.to_string()).collect()
     });
     let mut full_paths = Vec::new();
-    collect_files_recursive(root, &ignored_patterns, &mut full_paths)?;
+    collect_files_recursive(root, &ignored_patterns, &mut full_paths, 0)?;
     let files: Vec<String> = full_paths
         .iter()
         .filter_map(|p| p.strip_prefix(root).ok())
@@ -343,7 +356,7 @@ pub struct SearchMatch {
 }
 
 #[tauri::command]
-pub fn search_in_files(
+pub async fn search_in_files(
     path: String,
     query: String,
     ignored: Option<Vec<String>>,
@@ -351,12 +364,24 @@ pub fn search_in_files(
     if query.is_empty() {
         return Ok(Vec::new());
     }
+    tokio::task::spawn_blocking(move || {
+        search_in_files_inner(path, query, ignored)
+    })
+    .await
+    .map_err(|e| format!("Search task failed: {}", e))?
+}
+
+fn search_in_files_inner(
+    path: String,
+    query: String,
+    ignored: Option<Vec<String>>,
+) -> Result<Vec<SearchMatch>, String> {
     let root = Path::new(&path);
     let ignored_patterns: Vec<String> = ignored.unwrap_or_else(|| {
         DEFAULT_IGNORED.iter().map(|s| s.to_string()).collect()
     });
     let mut full_paths = Vec::new();
-    collect_files_recursive(root, &ignored_patterns, &mut full_paths)?;
+    collect_files_recursive(root, &ignored_patterns, &mut full_paths, 0)?;
 
     let query_lower: Vec<u8> = query.bytes().map(|b| b.to_ascii_lowercase()).collect();
     let mut results = Vec::new();

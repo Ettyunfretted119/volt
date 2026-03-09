@@ -2222,6 +2222,82 @@ button:hover {
   display: none;
 }
 
+/* ── Undo toast ── */
+.undo-toast {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  z-index: 4000;
+  font-size: 12px;
+  color: #d4d4d4;
+  animation: toast-in 0.2s ease-out;
+  white-space: nowrap;
+}
+.undo-toast.dismissing {
+  animation: toast-out 0.15s ease-in forwards;
+}
+.undo-toast-message {
+  color: #9a9aaa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+.undo-toast-name {
+  color: #d4d4d4;
+  font-weight: 500;
+}
+.undo-toast-btn {
+  color: #b45dff;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transition: background 0.12s, color 0.12s;
+}
+.undo-toast-btn:hover {
+  background: rgba(180, 93, 255, 0.12);
+  color: #c77dff;
+}
+.undo-toast-dismiss {
+  color: #4a4a54;
+  font-size: 14px;
+  padding: 0 2px;
+  transition: color 0.12s;
+}
+.undo-toast-dismiss:hover {
+  color: #9a9aaa;
+}
+.undo-toast-timer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: rgba(180, 93, 255, 0.4);
+  border-radius: 0 0 6px 6px;
+  animation: toast-timer 5s linear forwards;
+}
+@keyframes toast-in {
+  from { transform: translateX(-50%) translateY(12px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+@keyframes toast-out {
+  from { transform: translateX(-50%) translateY(0); opacity: 1; }
+  to   { transform: translateX(-50%) translateY(12px); opacity: 0; }
+}
+@keyframes toast-timer {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
 /* ── Utility ── */
 .hidden {
   display: none !important;

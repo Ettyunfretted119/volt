@@ -4043,6 +4043,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tokio",
  "webview2-com",
  "windows-core 0.61.2",
 ]
