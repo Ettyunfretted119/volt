@@ -191,6 +191,10 @@ pub fn write_terminal(id: String, data: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn resize_terminal(id: String, cols: u16, rows: u16) -> Result<(), String> {
+    if cols == 0 || rows == 0 {
+        return Ok(());
+    }
+
     let master = {
         let registry = PTY_REGISTRY.lock().map_err(|e| format!("Lock error: {}", e))?;
         let instance = registry
