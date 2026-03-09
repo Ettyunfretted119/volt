@@ -17,6 +17,8 @@ struct PtyInstance {
 static PTY_REGISTRY: std::sync::LazyLock<Mutex<HashMap<String, PtyInstance>>> =
     std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
 
+const MAX_TERMINALS: usize = 20;
+
 static TERMINAL_COUNTER: std::sync::LazyLock<Mutex<u32>> =
     std::sync::LazyLock::new(|| Mutex::new(0));
 
@@ -44,6 +46,12 @@ pub fn spawn_terminal(
     shell: Option<String>,
     cwd: Option<String>,
 ) -> Result<String, String> {
+    {
+        let registry = PTY_REGISTRY.lock().map_err(|e| format!("Lock error: {}", e))?;
+        if registry.len() >= MAX_TERMINALS {
+            return Err(format!("Maximum terminal limit ({}) reached", MAX_TERMINALS));
+        }
+    }
     let pty_system = native_pty_system();
 
     let pair = pty_system
@@ -194,6 +202,8 @@ pub fn resize_terminal(id: String, cols: u16, rows: u16) -> Result<(), String> {
     if cols == 0 || rows == 0 {
         return Ok(());
     }
+    let cols = cols.min(500);
+    let rows = rows.min(200);
 
     let master = {
         let registry = PTY_REGISTRY.lock().map_err(|e| format!("Lock error: {}", e))?;

@@ -2,6 +2,57 @@ use base64::Engine;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+
+static PROJECT_ROOT: std::sync::LazyLock<Mutex<Option<PathBuf>>> =
+    std::sync::LazyLock::new(|| Mutex::new(None));
+
+/// Set the current project root (called when a folder is opened).
+pub fn set_project_root(path: Option<PathBuf>) {
+    if let Ok(mut root) = PROJECT_ROOT.lock() {
+        *root = path;
+    }
+}
+
+/// Validate that a path is within the project root or ~/.volt/ config dir.
+/// Returns the canonicalized path on success.
+fn validate_path(path: &str) -> Result<PathBuf, String> {
+    let target = fs::canonicalize(path)
+        .or_else(|_| {
+            // File may not exist yet (create_file) — canonicalize parent
+            let p = Path::new(path);
+            if let Some(parent) = p.parent() {
+                let canon_parent = fs::canonicalize(parent)?;
+                Ok(canon_parent.join(p.file_name().unwrap_or_default()))
+            } else {
+                Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Invalid path"))
+            }
+        })
+        .map_err(|e| format!("Path validation failed: {}", e))?;
+
+    // Always allow ~/.volt/ config directory
+    if let Some(home) = dirs::home_dir() {
+        let volt_dir = home.join(".volt");
+        if let Ok(canon_volt) = fs::canonicalize(&volt_dir) {
+            if target.starts_with(&canon_volt) {
+                return Ok(target);
+            }
+        }
+    }
+
+    // Check against project root
+    if let Ok(root) = PROJECT_ROOT.lock() {
+        if let Some(ref root_path) = *root {
+            if let Ok(canon_root) = fs::canonicalize(root_path) {
+                if target.starts_with(&canon_root) {
+                    return Ok(target);
+                }
+            }
+        }
+    }
+
+    Err("Path is outside the project directory".to_string())
+}
 
 #[derive(Debug, Serialize)]
 pub struct FileContent {
@@ -244,6 +295,7 @@ pub fn delete_swap_file(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn create_file(path: String) -> Result<(), String> {
+    validate_path(&path)?;
     let p = Path::new(&path);
     if p.exists() {
         return Err("File already exists".into());
@@ -253,6 +305,7 @@ pub fn create_file(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn create_directory(path: String) -> Result<(), String> {
+    validate_path(&path)?;
     let p = Path::new(&path);
     if p.exists() {
         return Err("Directory already exists".into());
@@ -262,11 +315,14 @@ pub fn create_directory(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn rename_path(old_path: String, new_path: String) -> Result<(), String> {
+    validate_path(&old_path)?;
+    validate_path(&new_path)?;
     fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename: {}", e))
 }
 
 #[tauri::command]
 pub fn delete_path(path: String) -> Result<(), String> {
+    validate_path(&path)?;
     let p = Path::new(&path);
     if p.is_dir() {
         fs::remove_dir_all(&path).map_err(|e| format!("Failed to delete: {}", e))
@@ -278,13 +334,15 @@ pub fn delete_path(path: String) -> Result<(), String> {
 // ── Recursive file listing (for quick open) ──
 
 const MAX_DEPTH: usize = 64;
+const MAX_FILES: usize = 100_000;
 
 fn collect_files_recursive(dir: &Path, ignored: &[String], files: &mut Vec<PathBuf>, depth: usize) -> Result<(), String> {
-    if depth >= MAX_DEPTH {
+    if depth >= MAX_DEPTH || files.len() >= MAX_FILES {
         return Ok(());
     }
     let entries = fs::read_dir(dir).map_err(|e| format!("Failed to read directory: {}", e))?;
     for entry in entries.flatten() {
+        if files.len() >= MAX_FILES { break; }
         let name = entry.file_name().to_string_lossy().to_string();
         if ignored.iter().any(|p| p == &name) { continue; }
         if name.starts_with('.') { continue; }
@@ -426,6 +484,7 @@ fn search_in_files_inner(
 
 #[tauri::command]
 pub fn open_in_file_manager(path: String) -> Result<(), String> {
+    validate_path(&path)?;
     let p = Path::new(&path);
     let dir = if p.is_file() {
         p.parent().unwrap_or(p)

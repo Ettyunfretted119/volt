@@ -20,6 +20,13 @@ let sidebarVisible = true;
 let projectType = null;
 let config = null;
 
+/** Shell-quote a file path to prevent accidental execution when pasted into a terminal.
+ *  Uses single quotes (literal in both bash and PowerShell). */
+function shellQuotePath(p) {
+  if (/^[\w.\-/\\:]+$/.test(p)) return p;
+  return "'" + p.replace(/'/g, "'\\''" ) + "'";
+}
+
 const sidebar = document.getElementById('sidebar');
 const sidebarResizer = document.getElementById('sidebar-resizer');
 const welcomeHint = document.getElementById('welcome-hint');
@@ -416,7 +423,7 @@ function initDragDrop() {
             // It's a file — paste path into terminal if active, otherwise open in editor
             const tab = getActiveTab();
             if (tab?.type === 'terminal' && tab.ptyId && !tab.exited) {
-              invoke('write_terminal', { id: tab.ptyId, data: path }).catch(() => {});
+              invoke('write_terminal', { id: tab.ptyId, data: shellQuotePath(path) }).catch(() => {});
             } else {
               const name = path.split(/[\\/]/).pop();
               openFile({ path, name, is_dir: false });
@@ -773,7 +780,17 @@ function toggleMarkdownPreview() {
 
     // Render markdown from current editor content
     const content = getEditorContent(tab.editorView);
-    preview.innerHTML = DOMPurify.sanitize(marked.parse(content));
+    preview.innerHTML = DOMPurify.sanitize(marked.parse(content), {
+      ALLOWED_TAGS: [
+        'h1','h2','h3','h4','h5','h6','p','br','hr','ul','ol','li',
+        'a','strong','em','b','i','code','pre','blockquote',
+        'table','thead','tbody','tr','th','td',
+        'img','del','sup','sub','mark','details','summary',
+        'dl','dt','dd','kbd','s','small',
+      ],
+      ALLOWED_ATTR: ['href','src','alt','title','id','align','colspan','rowspan','open'],
+      ALLOW_DATA_ATTR: false,
+    });
 
     // Hide editor, show preview
     const cmEl = tab.wrapper.querySelector('.cm-editor');
@@ -936,7 +953,7 @@ async function init() {
     if (shiftKey) {
       const tab = getActiveTab();
       if (tab?.type === 'terminal' && tab.ptyId && !tab.exited) {
-        invoke('write_terminal', { id: tab.ptyId, data: entry.path }).catch(() => {});
+        invoke('write_terminal', { id: tab.ptyId, data: shellQuotePath(entry.path) }).catch(() => {});
         return;
       }
     }

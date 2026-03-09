@@ -36,6 +36,8 @@ impl FileWatcherState {
     }
 }
 
+const MAX_WATCHES: usize = 10_000;
+
 #[tauri::command]
 pub fn watch_file(
     path: String,
@@ -45,6 +47,9 @@ pub fn watch_file(
     let p = PathBuf::from(&path);
     if s.watched.contains(&p) {
         return Ok(());
+    }
+    if s.watched.len() >= MAX_WATCHES {
+        return Err("Maximum file watch limit reached".to_string());
     }
     if let Some(watcher) = &mut s.watcher {
         watcher

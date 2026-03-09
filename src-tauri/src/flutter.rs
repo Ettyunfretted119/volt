@@ -107,8 +107,17 @@ pub fn list_emulators() -> Result<Vec<Emulator>, String> {
     Ok(emulators)
 }
 
+fn is_safe_emulator_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= 256
+        && id.chars().all(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | '.' | ' '))
+}
+
 #[tauri::command]
 pub fn launch_emulator(id: String, cold: Option<bool>) -> Result<(), String> {
+    if !is_safe_emulator_id(&id) {
+        return Err("Invalid emulator ID".to_string());
+    }
     if cold.unwrap_or(false) {
         // Cold boot: use Android emulator directly with -no-snapshot-load
         let android_home = std::env::var("ANDROID_HOME")

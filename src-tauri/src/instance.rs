@@ -188,11 +188,13 @@ pub fn check_folder_instance(folder: String) -> bool {
 /// Acquire a per-folder lock so other Volt instances know this folder is open.
 #[tauri::command]
 pub fn acquire_folder_lock(app: tauri::AppHandle, folder: String) -> Result<(), String> {
+    crate::fs::set_project_root(Some(std::path::PathBuf::from(&folder)));
     create_lock(&folder, app)
 }
 
 /// Release the current folder lock (called on close or folder switch).
 #[tauri::command]
 pub fn release_folder_lock() {
+    crate::fs::set_project_root(None);
     release_lock_internal()
 }
