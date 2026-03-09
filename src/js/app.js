@@ -40,6 +40,15 @@ const statusProjectType = document.getElementById('status-project-type');
 
 // ── Config (file-based via ~/.volt/config.json) ──
 
+let configSaveTimer = null;
+function saveConfigDebounced() {
+  clearTimeout(configSaveTimer);
+  configSaveTimer = setTimeout(() => {
+    configSaveTimer = null;
+    invoke('save_config', { config }).catch(e => console.warn('Failed to save config:', e));
+  }, 500);
+}
+
 async function loadConfig() {
   try {
     config = await invoke('load_config');
@@ -61,6 +70,7 @@ async function saveLastFolder(path) {
     config.recentFolders.unshift(path);
     config.recentFolders = config.recentFolders.slice(0, 5);
 
+    clearTimeout(configSaveTimer);
     await invoke('save_config', { config });
   } catch (e) { console.warn('Failed to save last folder:', e); }
 }
@@ -186,6 +196,7 @@ async function closeFolder() {
   currentFolder = null;
   if (!config) config = {};
   config.lastFolder = null;
+  clearTimeout(configSaveTimer);
   try { await invoke('save_config', { config }); } catch (e) { console.warn('Failed to save config:', e); }
 
   // Reset window title
@@ -285,7 +296,7 @@ function changeFontSize(delta) {
   const newSize = Math.max(8, Math.min(32, (config.terminal.fontSize || 14) + delta));
   config.terminal.fontSize = newSize;
   setTerminalConfig(config.terminal);
-  invoke('save_config', { config }).catch(e => console.warn('Failed to save config:', e));
+  saveConfigDebounced();
 }
 
 function initKeyboardShortcuts() {
@@ -293,6 +304,11 @@ function initKeyboardShortcuts() {
     if (e.ctrlKey && !e.shiftKey && e.key === 'o') {
       e.preventDefault();
       openFolder();
+    }
+    // Ctrl+Shift+O — Close Folder
+    if (e.ctrlKey && e.shiftKey && e.key === 'O') {
+      e.preventDefault();
+      if (currentFolder) closeFolder();
     }
     if (e.ctrlKey && !e.shiftKey && e.key === 'b') {
       e.preventDefault();
@@ -333,7 +349,7 @@ function initKeyboardShortcuts() {
       if (config?.terminal) {
         config.terminal.fontSize = 14;
         setTerminalConfig(config.terminal);
-        invoke('save_config', { config }).catch(e => console.warn('Failed to save config:', e));
+        saveConfigDebounced();
       }
     }
   });
@@ -389,6 +405,7 @@ async function saveWindowState() {
       sidebarWidth: sWidth,
       sidebarVisible: sidebarVisible,
     };
+    clearTimeout(configSaveTimer);
     await invoke('save_config', { config });
   } catch (e) { console.warn('Failed to save window state:', e); }
 }
@@ -882,7 +899,7 @@ function saveTabState() {
     activeIndex: activeIndex >= 0 ? activeIndex : null,
   };
 
-  invoke('save_config', { config }).catch(e => console.warn('Failed to save tab state:', e));
+  saveConfigDebounced();
 }
 
 async function restoreTabState(folderPath) {
@@ -933,7 +950,7 @@ function renderRecents() {
   clearBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     config.recentFolders = [];
-    try { await invoke('save_config', { config }); } catch (e) { console.warn('Failed to save config:', e); }
+    saveConfigDebounced();
     renderRecents();
   });
   header.appendChild(clearBtn);
@@ -970,7 +987,7 @@ async function init() {
   initAnalyzer(config?.diagnosticsPanelHeight, (height) => {
     if (!config) config = {};
     config.diagnosticsPanelHeight = height;
-    invoke('save_config', { config }).catch(e => console.warn('Failed to save config:', e));
+    saveConfigDebounced();
   }, () => {
     // On analyzer restart: re-send didOpen for all open file tabs
     for (const tab of getAllTabs()) {
@@ -1122,6 +1139,10 @@ async function init() {
   sidebarResizer.classList.add('welcome-hidden');
   document.getElementById('tab-bar').classList.add('welcome-hidden');
   terminalContainer.classList.add('welcome-hidden');
+
+  // Inject version from build config
+  const versionEl = document.getElementById('welcome-version');
+  if (versionEl) versionEl.textContent = 'v' + __APP_VERSION__;
 
   // Render recent folders on welcome screen
   renderRecents();

@@ -225,7 +225,7 @@ export async function createTerminalTab() {
   terminal.attachCustomKeyEventHandler((e) => {
     if (e.type !== 'keydown') return true;
     if (e.ctrlKey && e.key === 'Tab') return false;
-    if (e.ctrlKey && e.shiftKey && ['T', 'W', 'F'].includes(e.key)) return false;
+    if (e.ctrlKey && e.shiftKey && ['T', 'W', 'F', 'O'].includes(e.key)) return false;
 
     // Shift+Enter — send ESC + newline so apps like Claude Code can
     // distinguish it from plain Enter.  e.preventDefault() is critical:

@@ -81,6 +81,7 @@ cargo tauri dev
 | Shortcut | Action |
 |---|---|
 | `Ctrl+O` | Open folder |
+| `Ctrl+Shift+O` | Close folder |
 | `Ctrl+P` | Quick open file |
 | `Ctrl+S` | Save file |
 | `Ctrl+Shift+F` | Find in files |

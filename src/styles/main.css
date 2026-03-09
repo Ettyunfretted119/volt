@@ -35,6 +35,26 @@
   font-display: swap;
 }
 
+/* ── Design tokens ── */
+:root {
+  --purple: #b45dff;
+  --purple-light: #c77dff;
+  --yellow: #f0c800;
+  --bg: #141414;
+  --bg-surface: #1a1a1a;
+  --bg-hover: #262626;
+  --text: #d4d4d4;
+  --text-secondary: #7a7a8a;
+  --text-muted: #4a4a54;
+  --border: #222222;
+  --border-subtle: #2a2a2a;
+  --scrollbar: #3a3a44;
+  --error: #f44747;
+  --git-modified: #e2c08d;
+  --git-added: #73c991;
+  --git-deleted: #c74e39;
+}
+
 /* ── Reset ── */
 *, *::before, *::after {
   margin: 0;
@@ -45,8 +65,8 @@
 html, body {
   height: 100%;
   overflow: hidden;
-  background: #141414;
-  color: #d4d4d4;
+  background: var(--bg);
+  color: var(--text);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
@@ -56,7 +76,7 @@ html, body {
 button {
   background: none;
   border: none;
-  color: #d4d4d4;
+  color: var(--text);
   cursor: pointer;
   font-family: inherit;
   font-size: inherit;
@@ -128,7 +148,7 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  border-bottom: 1px solid #222222;
+  border-bottom: 1px solid var(--border);
 }
 
 #sidebar-title {
@@ -138,7 +158,7 @@ button:hover {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 3px;
-  color: #f0c800;
+  color: var(--yellow);
   text-transform: uppercase;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -161,11 +181,11 @@ button:hover {
 #sidebar-actions button {
   padding: 4px;
   border-radius: 4px;
-  color: #7a7a8a;
+  color: var(--text-secondary);
 }
 #sidebar-actions button:hover {
-  color: #d4d4d4;
-  background: #262626;
+  color: var(--text);
+  background: var(--bg-hover);
 }
 
 #btn-toggle-sidebar svg {
@@ -175,16 +195,16 @@ button:hover {
 /* Search box */
 #sidebar-search {
   padding: 6px 8px;
-  border-bottom: 1px solid #222222;
+  border-bottom: 1px solid var(--border);
 }
 
 #file-search {
   width: 100%;
-  background: #222222;
+  background: var(--border);
   border: 1px solid transparent;
   border-radius: 4px;
   padding: 5px 8px;
-  color: #d4d4d4;
+  color: var(--text);
   font-family: inherit;
   font-size: 12px;
   outline: none;
@@ -193,7 +213,7 @@ button:hover {
   color: #6a6a7a;
 }
 #file-search:focus {
-  border-color: #b45dff;
+  border-color: var(--purple);
   box-shadow: 0 0 0 2px rgba(180, 93, 255, 0.15);
 }
 
@@ -212,7 +232,7 @@ button:hover {
   background: transparent;
 }
 #file-tree::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 
@@ -225,10 +245,10 @@ button:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
-  color: #d4d4d4;
+  color: var(--text);
 }
 .tree-item:hover {
-  background: #262626;
+  background: var(--bg-hover);
 }
 .tree-chevron {
   width: 16px;
@@ -237,7 +257,7 @@ button:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   font-size: 10px;
 }
 .tree-chevron.file-spacer {
@@ -266,10 +286,10 @@ button:hover {
 }
 
 /* Git status colors on file names */
-.tree-name.git-modified { color: #e2c08d; }
-.tree-name.git-untracked { color: #73c991; }
-.tree-name.git-added { color: #73c991; }
-.tree-name.git-deleted { color: #c74e39; text-decoration: line-through; }
+.tree-name.git-modified { color: var(--git-modified); }
+.tree-name.git-untracked { color: var(--git-added); }
+.tree-name.git-added { color: var(--git-added); }
+.tree-name.git-deleted { color: var(--git-deleted); text-decoration: line-through; }
 
 /* Git status badge (M, U, A, D) on the right side */
 .git-badge {
@@ -280,10 +300,10 @@ button:hover {
   font-weight: 600;
   font-family: 'JetBrains Mono', monospace;
 }
-.git-badge.git-modified { color: #e2c08d; }
-.git-badge.git-untracked { color: #73c991; }
-.git-badge.git-added { color: #73c991; }
-.git-badge.git-deleted { color: #c74e39; }
+.git-badge.git-modified { color: var(--git-modified); }
+.git-badge.git-untracked { color: var(--git-added); }
+.git-badge.git-added { color: var(--git-added); }
+.git-badge.git-deleted { color: var(--git-deleted); }
 
 /* Dot indicator for folders with dirty children */
 .git-dot {
@@ -293,7 +313,7 @@ button:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e2c08d;
+  background: var(--git-modified);
 }
 
 .tree-children {
@@ -317,8 +337,8 @@ button:hover {
 
 .open-folder-btn {
   background: rgba(180, 93, 255, 0.12);
-  border: 1px solid #b45dff;
-  color: #b45dff;
+  border: 1px solid var(--purple);
+  color: var(--purple);
   padding: 8px 20px;
   border-radius: 6px;
   font-size: 13px;
@@ -327,8 +347,8 @@ button:hover {
 }
 .open-folder-btn:hover {
   background: rgba(180, 93, 255, 0.2);
-  color: #c77dff;
-  border-color: #c77dff;
+  color: var(--purple-light);
+  border-color: var(--purple-light);
 }
 
 /* ── Sidebar resizer ── */
@@ -341,7 +361,7 @@ button:hover {
 }
 #sidebar-resizer:hover,
 #sidebar-resizer.dragging {
-  background: #b45dff;
+  background: var(--purple);
 }
 
 /* ── Main area ── */
@@ -350,7 +370,7 @@ button:hover {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #141414;
+  background: var(--bg);
 }
 
 /* Welcome hint */
@@ -359,7 +379,7 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #141414;
+  background: var(--bg);
   position: relative;
 }
 #welcome-hint.hidden {
@@ -389,14 +409,14 @@ button:hover {
   font-size: 32px;
   font-weight: 700;
   letter-spacing: 10px;
-  color: #f0c800;
+  color: var(--yellow);
   margin-bottom: 6px;
   text-indent: 10px;
 }
 
 .welcome-tagline {
   font-size: 13px;
-  color: #4a4a54;
+  color: var(--text-muted);
   letter-spacing: 1px;
   margin-bottom: 28px;
 }
@@ -407,7 +427,7 @@ button:hover {
   gap: 8px;
   background: rgba(180, 93, 255, 0.1);
   border: 1px solid rgba(180, 93, 255, 0.4);
-  color: #b45dff;
+  color: var(--purple);
   padding: 10px 28px;
   border-radius: 8px;
   font-size: 14px;
@@ -418,8 +438,8 @@ button:hover {
 }
 .welcome-open-btn:hover {
   background: rgba(180, 93, 255, 0.18);
-  border-color: #b45dff;
-  color: #c77dff;
+  border-color: var(--purple);
+  color: var(--purple-light);
   transform: translateY(-1px);
   box-shadow: 0 4px 20px rgba(180, 93, 255, 0.15);
 }
@@ -439,13 +459,13 @@ button:hover {
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  color: #3a3a44;
+  color: var(--scrollbar);
 }
 
 .welcome-shortcut kbd {
   display: inline-block;
-  background: #1a1a1a;
-  border: 1px solid #262626;
+  background: var(--bg-surface);
+  border: 1px solid var(--bg-hover);
   border-radius: 4px;
   padding: 2px 7px;
   font-family: 'JetBrains Mono', monospace;
@@ -457,7 +477,7 @@ button:hover {
 }
 
 .welcome-shortcut span {
-  color: #3a3a44;
+  color: var(--scrollbar);
 }
 
 /* Recent folders */
@@ -474,13 +494,13 @@ button:hover {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1px;
-  color: #4a4a54;
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
 .recents-clear {
   font-size: 10px;
-  color: #3a3a44;
+  color: var(--scrollbar);
   letter-spacing: 0;
   text-transform: none;
   font-weight: 400;
@@ -489,8 +509,8 @@ button:hover {
   transition: color 0.15s, background 0.15s;
 }
 .recents-clear:hover {
-  color: #d4d4d4;
-  background: #222222;
+  color: var(--text);
+  background: var(--border);
 }
 
 .recents-item {
@@ -508,13 +528,13 @@ button:hover {
 
 .recents-name {
   font-size: 13px;
-  color: #d4d4d4;
+  color: var(--text);
   font-weight: 500;
 }
 
 .recents-path {
   font-size: 11px;
-  color: #3a3a44;
+  color: var(--scrollbar);
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: -0.2px;
   overflow: hidden;
@@ -524,13 +544,13 @@ button:hover {
 
 .welcome-version {
   font-size: 11px;
-  color: #2a2a2a;
+  color: var(--border-subtle);
   letter-spacing: 1px;
 }
 
 .welcome-credit {
   font-size: 11px;
-  color: #4a4a54;
+  color: var(--text-muted);
   letter-spacing: 0.3px;
   position: absolute;
   bottom: 16px;
@@ -546,8 +566,8 @@ button:hover {
 #tab-bar {
   display: flex;
   align-items: stretch;
-  background: #141414;
-  border-bottom: 1px solid #222222;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
   height: 36px;
   flex-shrink: 0;
 }
@@ -574,21 +594,21 @@ button:hover {
   padding: 0 14px;
   height: 36px;
   background: #191919;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   font-size: 12px;
   white-space: nowrap;
   cursor: pointer;
-  border-right: 1px solid #222222;
+  border-right: 1px solid var(--border);
   position: relative;
   gap: 8px;
   flex-shrink: 0;
 }
 .tab:hover {
-  color: #d4d4d4;
+  color: var(--text);
   background: #1e1e1e;
 }
 .tab.active {
-  background: #141414;
+  background: var(--bg);
   color: #ffffff;
 }
 .tab.active::before {
@@ -598,7 +618,7 @@ button:hover {
   left: 0;
   right: 0;
   height: 2px;
-  background: #b45dff;
+  background: var(--purple);
 }
 
 /* Tab icons */
@@ -607,7 +627,7 @@ button:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #7a7a8a;
+  color: var(--text-secondary);
 }
 .tab.active .tab-icon {
   color: #aaaaaa;
@@ -624,7 +644,7 @@ button:hover {
 
 .tab-close {
   font-size: 14px;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   padding: 0 2px;
   border-radius: 3px;
   line-height: 1;
@@ -639,22 +659,22 @@ button:hover {
 }
 
 .tab.drag-over-left {
-  box-shadow: -2px 0 0 0 #b45dff;
+  box-shadow: -2px 0 0 0 var(--purple);
 }
 
 .tab.drag-over-right {
-  box-shadow: 2px 0 0 0 #b45dff;
+  box-shadow: 2px 0 0 0 var(--purple);
 }
 
 #btn-new-tab {
   padding: 0 14px;
   font-size: 18px;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 #btn-new-tab:hover {
-  color: #d4d4d4;
-  background: #262626;
+  color: var(--text);
+  background: var(--bg-hover);
 }
 
 /* ── Terminal container ── */
@@ -685,7 +705,7 @@ button:hover {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #2a2a2a;
+  color: var(--border-subtle);
   font-size: 13px;
   letter-spacing: 0.3px;
 }
@@ -703,7 +723,7 @@ button:hover {
   background: transparent;
 }
 .terminal-wrapper .xterm-viewport::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 4px;
 }
 
@@ -714,7 +734,7 @@ button:hover {
   justify-content: space-between;
   height: 28px;
   background: #181818;
-  border-top: 1px solid #222222;
+  border-top: 1px solid var(--border);
   padding: 0 10px;
   font-size: 11.5px;
   line-height: 28px;
@@ -746,7 +766,7 @@ button:hover {
   transform: translateY(-50%);
   height: 14px;
   width: 1px;
-  background: #222222;
+  background: var(--border);
 }
 
 #status-folder {
@@ -763,7 +783,7 @@ button:hover {
 #status-project-type {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #b45dff;
+  color: var(--purple);
   background: rgba(180, 93, 255, 0.08);
   padding: 1px 6px;
   border-radius: 3px;
@@ -780,8 +800,8 @@ button:hover {
 /* ── Context menu ── */
 .context-menu {
   position: fixed;
-  background: #1a1a1a;
-  border: 1px solid #222222;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 0;
   min-width: 180px;
@@ -793,7 +813,7 @@ button:hover {
   padding: 6px 14px;
   cursor: pointer;
   font-size: 12px;
-  color: #d4d4d4;
+  color: var(--text);
 }
 .context-menu-item:hover {
   background: rgba(180, 93, 255, 0.12);
@@ -801,7 +821,7 @@ button:hover {
 }
 .context-menu-separator {
   height: 1px;
-  background: #222222;
+  background: var(--border);
   margin: 4px 0;
 }
 
@@ -828,7 +848,7 @@ button:hover {
 }
 .diag-resizer:hover,
 .diag-resizer.dragging {
-  background: #b45dff;
+  background: var(--purple);
   top: -1px;
   height: 2px;
 }
@@ -848,7 +868,7 @@ button:hover {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1.5px;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -865,11 +885,11 @@ button:hover {
   justify-content: center;
   border-radius: 4px;
   font-size: 14px;
-  color: #4a4a54;
+  color: var(--text-muted);
   transition: color 0.15s, background 0.15s;
 }
 .diag-btn:hover {
-  color: #d4d4d4;
+  color: var(--text);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -889,7 +909,7 @@ button:hover {
   border-radius: 3px;
 }
 .diag-list::-webkit-scrollbar-thumb:hover {
-  background: #3a3a44;
+  background: var(--scrollbar);
 }
 
 .diag-item {
@@ -970,7 +990,7 @@ button:hover {
   transition: color 0.15s;
 }
 .lint-restart:hover {
-  color: #d4d4d4;
+  color: var(--text);
 }
 
 /* ── Emulator button & dropdown ── */
@@ -982,13 +1002,13 @@ button:hover {
   transition: color 0.15s;
 }
 .status-emulator-btn:hover {
-  color: #d4d4d4;
+  color: var(--text);
 }
 
 .emulator-dropdown {
   position: fixed;
   background: #161616;
-  border: 1px solid #222222;
+  border: 1px solid var(--border);
   border-radius: 8px;
   width: 280px;
   max-height: 360px;
@@ -1012,14 +1032,14 @@ button:hover {
   border-bottom: 1px solid #1e1e1e;
   font-size: 10px;
   font-weight: 600;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 
 .emu-refresh {
   font-size: 14px;
-  color: #4a4a54;
+  color: var(--text-muted);
   width: 26px;
   height: 24px;
   display: inline-flex;
@@ -1029,7 +1049,7 @@ button:hover {
   transition: color 0.15s, background 0.15s, transform 0.3s;
 }
 .emu-refresh:hover {
-  color: #d4d4d4;
+  color: var(--text);
   background: rgba(255, 255, 255, 0.06);
 }
 .emu-refresh.spinning {
@@ -1080,7 +1100,7 @@ button:hover {
   justify-content: center;
   background: rgba(180, 93, 255, 0.08);
   border-radius: 6px;
-  color: #b45dff;
+  color: var(--purple);
   flex-shrink: 0;
 }
 
@@ -1095,7 +1115,7 @@ button:hover {
 .emu-card-name {
   font-size: 12px;
   font-weight: 500;
-  color: #d4d4d4;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1103,7 +1123,7 @@ button:hover {
 
 .emu-card-platform {
   font-size: 10px;
-  color: #4a4a54;
+  color: var(--text-muted);
   letter-spacing: 0.2px;
 }
 
@@ -1167,7 +1187,7 @@ button:hover {
   top: -1px;
 }
 .status-settings-btn:hover {
-  color: #d4d4d4;
+  color: var(--text);
 }
 
 #settings-overlay {
@@ -1191,7 +1211,7 @@ button:hover {
 
 .settings-panel {
   background: #161616;
-  border: 1px solid #222222;
+  border: 1px solid var(--border);
   border-radius: 8px;
   width: 480px;
   max-width: 90vw;
@@ -1212,7 +1232,7 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   padding: 0 14px 0 0;
-  border-bottom: 1px solid #222222;
+  border-bottom: 1px solid var(--border);
 }
 
 .settings-tabs {
@@ -1232,8 +1252,8 @@ button:hover {
   color: #9a9aaa;
 }
 .settings-tab.active {
-  color: #d4d4d4;
-  border-bottom-color: #b45dff;
+  color: var(--text);
+  border-bottom-color: var(--purple);
 }
 
 .settings-tab-content {
@@ -1248,19 +1268,19 @@ button:hover {
   background: transparent;
 }
 .settings-tab-content::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 
 .settings-close {
   font-size: 16px;
-  color: #4a4a54;
+  color: var(--text-muted);
   padding: 2px 6px;
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
 }
 .settings-close:hover {
-  color: #d4d4d4;
+  color: var(--text);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -1308,9 +1328,9 @@ button:hover {
 .settings-input-sm,
 .settings-input-wide,
 .settings-input-full {
-  background: #1a1a1a;
-  border: 1px solid #222222;
-  color: #d4d4d4;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   border-radius: 4px;
@@ -1321,7 +1341,7 @@ button:hover {
 .settings-input-sm:hover,
 .settings-input-wide:hover,
 .settings-input-full:hover {
-  border-color: #3a3a44;
+  border-color: var(--scrollbar);
 }
 
 .settings-input-sm:focus,
@@ -1370,7 +1390,7 @@ button:hover {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background: #2a2a2a;
+  background: var(--border-subtle);
   border-radius: 10px;
   transition: background 0.2s;
 }
@@ -1393,7 +1413,7 @@ button:hover {
 
 .settings-toggle input:checked + .settings-toggle-slider::before {
   transform: translateX(16px);
-  background: #b45dff;
+  background: var(--purple);
 }
 
 /* JSON editor */
@@ -1408,10 +1428,10 @@ button:hover {
   width: 100%;
   min-height: 240px;
   background: #111111;
-  border: 1px solid #222222;
+  border: 1px solid var(--border);
   border-radius: 4px;
   padding: 12px;
-  color: #d4d4d4;
+  color: var(--text);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   line-height: 1.6;
@@ -1421,7 +1441,7 @@ button:hover {
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .settings-json-editor:hover {
-  border-color: #3a3a44;
+  border-color: var(--scrollbar);
 }
 .settings-json-editor:focus {
   border-color: rgba(180, 93, 255, 0.5);
@@ -1434,13 +1454,13 @@ button:hover {
   background: transparent;
 }
 .settings-json-editor::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 
 .settings-json-error {
   font-size: 11px;
-  color: #f44747;
+  color: var(--error);
   font-family: 'JetBrains Mono', monospace;
   padding: 0 2px;
 }
@@ -1451,16 +1471,16 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   padding: 10px 18px;
-  border-top: 1px solid #222222;
+  border-top: 1px solid var(--border);
 }
 
 .settings-hint {
   font-size: 11px;
-  color: #3a3a44;
+  color: var(--scrollbar);
 }
 
 .settings-save {
-  background: #b45dff;
+  background: var(--purple);
   border: none;
   color: #ffffff;
   padding: 5px 20px;
@@ -1483,10 +1503,10 @@ button:hover {
   height: 26px;
   line-height: 26px;
   background: #181818;
-  border-bottom: 1px solid #222222;
+  border-bottom: 1px solid var(--border);
   padding: 0 12px;
   font-size: 12px;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1502,15 +1522,15 @@ button:hover {
 }
 
 .breadcrumb-segment {
-  color: #7a7a8a;
+  color: var(--text-secondary);
 }
 
 .breadcrumb-segment:last-child {
-  color: #d4d4d4;
+  color: var(--text);
 }
 
 .breadcrumb-separator {
-  color: #3a3a44;
+  color: var(--scrollbar);
   margin: 0 5px;
 }
 
@@ -1522,7 +1542,7 @@ button:hover {
   padding: 2px 8px;
   border-radius: 3px;
   font-size: 11px;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
   flex-shrink: 0;
@@ -1530,11 +1550,11 @@ button:hover {
   transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
 #btn-md-preview:hover {
-  color: #d4d4d4;
-  background: #222222;
+  color: var(--text);
+  background: var(--border);
 }
 #btn-md-preview.active {
-  color: #f0c800;
+  color: var(--yellow);
   border-color: rgba(240, 200, 0, 0.25);
   background: rgba(240, 200, 0, 0.06);
 }
@@ -1544,12 +1564,12 @@ button:hover {
 
 /* ── File tab yellow accent ── */
 .tab.tab-file.active::before {
-  background: #f0c800;
+  background: var(--yellow);
 }
 
 /* ── Modified dot ── */
 .tab-modified {
-  color: #f0c800;
+  color: var(--yellow);
   margin-right: 4px;
   font-size: 10px;
 }
@@ -1575,11 +1595,11 @@ button:hover {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 32px 48px 48px;
-  background: #141414;
+  background: var(--bg);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.7;
-  color: #d4d4d4;
+  color: var(--text);
   display: none;
 }
 .md-preview.active {
@@ -1593,7 +1613,7 @@ button:hover {
   background: transparent;
 }
 .md-preview::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 4px;
 }
 
@@ -1615,7 +1635,7 @@ button:hover {
   color: #e8e8e8;
   margin: 28px 0 12px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #222222;
+  border-bottom: 1px solid var(--border);
   line-height: 1.3;
 }
 
@@ -1630,7 +1650,7 @@ button:hover {
 .md-preview h4, .md-preview h5, .md-preview h6 {
   font-size: 15px;
   font-weight: 600;
-  color: #d4d4d4;
+  color: var(--text);
   margin: 20px 0 8px;
 }
 
@@ -1664,7 +1684,7 @@ button:hover {
 /* Inline code */
 .md-preview code {
   background: #1e1e1e;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 2px 6px;
   font-family: 'JetBrains Mono', monospace;
@@ -1675,7 +1695,7 @@ button:hover {
 /* Code blocks */
 .md-preview pre {
   background: #111111;
-  border: 1px solid #222222;
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 16px 20px;
   margin: 16px 0;
@@ -1687,7 +1707,7 @@ button:hover {
   border: none;
   border-radius: 0;
   padding: 0;
-  color: #d4d4d4;
+  color: var(--text);
   font-size: 13px;
 }
 .md-preview pre::-webkit-scrollbar {
@@ -1697,7 +1717,7 @@ button:hover {
   background: transparent;
 }
 .md-preview pre::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 
@@ -1732,7 +1752,7 @@ button:hover {
   height: 15px;
   border: 1px solid #444;
   border-radius: 3px;
-  background: #1a1a1a;
+  background: var(--bg-surface);
   margin-right: 6px;
   position: relative;
   top: 2px;
@@ -1740,7 +1760,7 @@ button:hover {
 }
 .md-preview input[type="checkbox"]:checked {
   background: rgba(180, 93, 255, 0.2);
-  border-color: #b45dff;
+  border-color: var(--purple);
 }
 .md-preview input[type="checkbox"]:checked::after {
   content: '✓';
@@ -1748,7 +1768,7 @@ button:hover {
   top: -1px;
   left: 2px;
   font-size: 11px;
-  color: #b45dff;
+  color: var(--purple);
 }
 
 /* Tables */
@@ -1759,16 +1779,16 @@ button:hover {
   font-size: 13px;
 }
 .md-preview th {
-  background: #1a1a1a;
+  background: var(--bg-surface);
   font-weight: 600;
-  color: #d4d4d4;
+  color: var(--text);
   text-align: left;
   padding: 8px 12px;
-  border: 1px solid #222222;
+  border: 1px solid var(--border);
 }
 .md-preview td {
   padding: 8px 12px;
-  border: 1px solid #222222;
+  border: 1px solid var(--border);
   color: #b8b8c0;
 }
 .md-preview tr:hover td {
@@ -1808,15 +1828,15 @@ button:hover {
   object-fit: contain;
   border-radius: 4px;
   background-image:
-    linear-gradient(45deg, #1a1a1a 25%, transparent 25%),
-    linear-gradient(-45deg, #1a1a1a 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #1a1a1a 75%),
-    linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+    linear-gradient(45deg, var(--bg-surface) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--bg-surface) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--bg-surface) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--bg-surface) 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
 }
 .image-info {
-  color: #7a7a8a;
+  color: var(--text-secondary);
   font-size: 12px;
   font-family: 'JetBrains Mono', monospace;
 }
@@ -1839,7 +1859,7 @@ button:hover {
   animation: overlay-fade 0.1s ease-out;
 }
 .prompt-dialog {
-  background: #1a1a1a;
+  background: var(--bg-surface);
   border: 1px solid #333;
   border-radius: 8px;
   padding: 16px 20px;
@@ -1848,23 +1868,23 @@ button:hover {
 }
 .prompt-label {
   font-size: 12px;
-  color: #7a7a8a;
+  color: var(--text-secondary);
   margin-bottom: 8px;
   font-weight: 500;
 }
 .prompt-input {
   width: 100%;
-  background: #141414;
+  background: var(--bg);
   border: 1px solid #333;
   border-radius: 4px;
   padding: 8px 10px;
-  color: #d4d4d4;
+  color: var(--text);
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   outline: none;
 }
 .prompt-input:focus {
-  border-color: #b45dff;
+  border-color: var(--purple);
   box-shadow: 0 0 0 2px rgba(180, 93, 255, 0.15);
 }
 
@@ -1884,7 +1904,7 @@ button:hover {
   margin: 60px auto 0;
   width: 520px;
   max-width: 90vw;
-  background: #1a1a1a;
+  background: var(--bg-surface);
   border: 1px solid #333;
   border-radius: 8px;
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6);
@@ -1892,11 +1912,11 @@ button:hover {
 }
 #quick-open-input {
   width: 100%;
-  background: #1a1a1a;
+  background: var(--bg-surface);
   border: none;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid var(--border);
   padding: 12px 16px;
-  color: #d4d4d4;
+  color: var(--text);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 14px;
   outline: none;
@@ -1915,7 +1935,7 @@ button:hover {
   background: transparent;
 }
 #quick-open-results::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 .qo-item {
@@ -1927,13 +1947,13 @@ button:hover {
   font-size: 13px;
 }
 .qo-item:hover {
-  background: #222;
+  background: var(--border);
 }
 .qo-item.selected {
   background: rgba(180, 93, 255, 0.12);
 }
 .qo-name {
-  color: #d4d4d4;
+  color: var(--text);
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -1967,7 +1987,7 @@ button:hover {
   margin: 60px auto 0;
   width: 600px;
   max-width: 90vw;
-  background: #1a1a1a;
+  background: var(--bg-surface);
   border: 1px solid #333;
   border-radius: 8px;
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6);
@@ -1979,14 +1999,14 @@ button:hover {
 .search-header {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid var(--border);
 }
 #search-input {
   flex: 1;
-  background: #1a1a1a;
+  background: var(--bg-surface);
   border: none;
   padding: 12px 16px;
-  color: #d4d4d4;
+  color: var(--text);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 14px;
   outline: none;
@@ -2001,7 +2021,7 @@ button:hover {
   flex-shrink: 0;
 }
 #search-close:hover {
-  color: #d4d4d4;
+  color: var(--text);
 }
 #search-results {
   flex: 1;
@@ -2014,14 +2034,14 @@ button:hover {
   background: transparent;
 }
 #search-results::-webkit-scrollbar-thumb {
-  background: #3a3a44;
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 #search-status {
   padding: 6px 16px;
   font-size: 11px;
   color: #555;
-  border-top: 1px solid #222;
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 #search-status:empty {
@@ -2037,7 +2057,7 @@ button:hover {
   padding: 6px 16px;
   font-size: 12px;
   font-weight: 600;
-  color: #b45dff;
+  color: var(--purple);
   background: #161616;
   position: sticky;
   top: 0;
@@ -2045,8 +2065,8 @@ button:hover {
 .search-count-badge {
   font-size: 10px;
   font-weight: 400;
-  color: #7a7a8a;
-  background: #222;
+  color: var(--text-secondary);
+  background: var(--border);
   border-radius: 8px;
   padding: 1px 6px;
 }
@@ -2077,7 +2097,7 @@ button:hover {
 }
 .search-line-content mark {
   background: rgba(240, 200, 0, 0.25);
-  color: #f0c800;
+  color: var(--yellow);
   border-radius: 2px;
   padding: 0 1px;
 }
@@ -2092,7 +2112,7 @@ button:hover {
 
 /* ── CodeMirror search/replace panel ── */
 .cm-panels {
-  border-top: 1px solid #222222;
+  border-top: 1px solid var(--border);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
 }
 
@@ -2128,9 +2148,9 @@ button:hover {
   appearance: none;
   width: 13px;
   height: 13px;
-  border: 1px solid #3a3a44;
+  border: 1px solid var(--scrollbar);
   border-radius: 3px;
-  background: #1a1a1a;
+  background: var(--bg-surface);
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
@@ -2141,7 +2161,7 @@ button:hover {
 }
 .cm-search input[type="checkbox"]:checked {
   background: rgba(180, 93, 255, 0.2);
-  border-color: #b45dff;
+  border-color: var(--purple);
 }
 .cm-search input[type="checkbox"]:checked::after {
   content: '✓';
@@ -2149,35 +2169,35 @@ button:hover {
   top: -1px;
   left: 1.5px;
   font-size: 10px;
-  color: #b45dff;
+  color: var(--purple);
   line-height: 1;
 }
 
 .cm-textfield {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 5px 8px;
-  color: #d4d4d4;
+  color: var(--text);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .cm-textfield:hover {
-  border-color: #3a3a44;
+  border-color: var(--scrollbar);
 }
 .cm-textfield:focus {
   border-color: rgba(180, 93, 255, 0.5);
   box-shadow: 0 0 0 2px rgba(180, 93, 255, 0.08);
 }
 .cm-textfield::placeholder {
-  color: #3a3a44;
+  color: var(--scrollbar);
 }
 
 .cm-button {
-  background: #222222;
-  border: 1px solid #2a2a2a;
+  background: var(--border);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 4px 10px;
   color: #9a9aaa;
@@ -2189,9 +2209,9 @@ button:hover {
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .cm-button:hover {
-  background: #2a2a2a;
-  color: #d4d4d4;
-  border-color: #3a3a44;
+  background: var(--border-subtle);
+  color: var(--text);
+  border-color: var(--scrollbar);
 }
 .cm-button:active {
   background: #333333;
@@ -2204,7 +2224,7 @@ button:hover {
   right: 8px;
   background: none;
   border: none;
-  color: #4a4a54;
+  color: var(--text-muted);
   font-size: 16px;
   padding: 2px 6px;
   border-radius: 4px;
@@ -2213,7 +2233,7 @@ button:hover {
   transition: color 0.15s, background 0.15s;
 }
 .cm-panel button[name="close"]:hover {
-  color: #d4d4d4;
+  color: var(--text);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -2229,7 +2249,7 @@ button:hover {
   left: 50%;
   transform: translateX(-50%) translateY(0);
   background: #1e1e1e;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   padding: 8px 14px;
   display: flex;
@@ -2238,7 +2258,7 @@ button:hover {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   z-index: 4000;
   font-size: 12px;
-  color: #d4d4d4;
+  color: var(--text);
   animation: toast-in 0.2s ease-out;
   white-space: nowrap;
 }
@@ -2252,11 +2272,11 @@ button:hover {
   max-width: 320px;
 }
 .undo-toast-name {
-  color: #d4d4d4;
+  color: var(--text);
   font-weight: 500;
 }
 .undo-toast-btn {
-  color: #b45dff;
+  color: var(--purple);
   font-weight: 600;
   font-size: 12px;
   padding: 2px 8px;
@@ -2265,10 +2285,10 @@ button:hover {
 }
 .undo-toast-btn:hover {
   background: rgba(180, 93, 255, 0.12);
-  color: #c77dff;
+  color: var(--purple-light);
 }
 .undo-toast-dismiss {
-  color: #4a4a54;
+  color: var(--text-muted);
   font-size: 14px;
   padding: 0 2px;
   transition: color 0.12s;
