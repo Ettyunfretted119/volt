@@ -34,19 +34,19 @@ fn main() {
             #[cfg(target_os = "windows")]
             {
                 if let Some(window) = app.get_webview_window("main") {
-                let _ = window.with_webview(|webview| unsafe {
-                    use webview2_com::Microsoft::Web::WebView2::Win32::*;
-                    use windows_core::Interface;
-                    let settings: ICoreWebView2Settings3 = webview
-                        .controller()
-                        .CoreWebView2()
-                        .unwrap()
-                        .Settings()
-                        .unwrap()
-                        .cast()
-                        .unwrap();
-                    let _ = settings.SetAreBrowserAcceleratorKeysEnabled(false);
-                });
+                    let _ = window.with_webview(|webview| unsafe {
+                        use webview2_com::Microsoft::Web::WebView2::Win32::*;
+                        use windows_core::Interface;
+                        let settings: ICoreWebView2Settings3 = webview
+                            .controller()
+                            .CoreWebView2()
+                            .unwrap()
+                            .Settings()
+                            .unwrap()
+                            .cast()
+                            .unwrap();
+                        let _ = settings.SetAreBrowserAcceleratorKeysEnabled(false);
+                    });
                 }
             }
 

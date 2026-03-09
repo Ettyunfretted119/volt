@@ -20,10 +20,20 @@ pub fn get_system_stats() -> Result<SystemStats, String> {
     let mut sys = SYS.lock().map_err(|e| format!("Lock error: {}", e))?;
 
     // First call: baseline refresh so next call can compute CPU delta.
-    // CPU will read 0% on first call — acceptable, next poll (5s later) will be accurate.
+    // Return early — RAM is accurate, CPU reads 0% (no prior baseline).
+    // Next poll (5s later) will have a real delta for accurate CPU%.
     if !INITIALIZED.load(Ordering::Relaxed) {
         sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
         INITIALIZED.store(true, Ordering::Relaxed);
+        let stats = if let Some(process) = sys.process(pid) {
+            SystemStats {
+                ram_mb: process.memory() as f64 / 1_048_576.0,
+                cpu_percent: 0.0,
+            }
+        } else {
+            SystemStats { ram_mb: 0.0, cpu_percent: 0.0 }
+        };
+        return Ok(stats);
     }
 
     sys.refresh_processes(

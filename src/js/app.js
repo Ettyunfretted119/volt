@@ -21,9 +21,15 @@ let projectType = null;
 let config = null;
 
 /** Shell-quote a file path to prevent accidental execution when pasted into a terminal.
- *  Uses single quotes (literal in both bash and PowerShell). */
+ *  Uses single quotes: bash escapes embedded quotes with '\'', PowerShell with ''. */
+const IS_WINDOWS_PLATFORM = navigator.platform.startsWith('Win');
 function shellQuotePath(p) {
   if (/^[\w.\-/\\:]+$/.test(p)) return p;
+  if (IS_WINDOWS_PLATFORM) {
+    // PowerShell: single-quoted strings escape ' as ''
+    return "'" + p.replace(/'/g, "''") + "'";
+  }
+  // Bash/zsh: break out of single quote, add escaped quote, re-enter
   return "'" + p.replace(/'/g, "'\\''" ) + "'";
 }
 

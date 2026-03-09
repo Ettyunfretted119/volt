@@ -245,6 +245,9 @@ fn uri_to_relative(uri: &str, root: &str) -> String {
     #[cfg(not(target_os = "windows"))]
     let path = uri.strip_prefix("file://").unwrap_or(uri);
 
+    // LSP servers return percent-encoded URIs (e.g. spaces as %20)
+    let path = percent_decode(path);
+
     #[cfg(target_os = "windows")]
     let (path, root_normalized) = (
         path.replace('/', "\\"),
@@ -268,11 +271,64 @@ fn path_to_uri(path: &str) -> String {
     #[cfg(target_os = "windows")]
     {
         let normalized = path.replace('\\', "/");
-        format!("file:///{}", normalized.trim_start_matches('/'))
+        let encoded = percent_encode_path(&normalized);
+        format!("file:///{}", encoded.trim_start_matches('/'))
     }
     #[cfg(not(target_os = "windows"))]
     {
-        format!("file://{}", path)
+        let encoded = percent_encode_path(path);
+        format!("file://{}", encoded)
+    }
+}
+
+/// Percent-encode a file path for use in a file:// URI.
+/// Encodes characters that are not URI-unreserved (RFC 3986) while
+/// preserving `/` (path separator) and `:` (Windows drive letter).
+fn percent_encode_path(path: &str) -> String {
+    let mut out = String::with_capacity(path.len());
+    for b in path.bytes() {
+        match b {
+            // Unreserved characters (RFC 3986) + path separators
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9'
+            | b'-' | b'.' | b'_' | b'~'
+            | b'/' | b':' => out.push(b as char),
+            _ => {
+                out.push('%');
+                out.push(HEX_UPPER[(b >> 4) as usize] as char);
+                out.push(HEX_UPPER[(b & 0x0F) as usize] as char);
+            }
+        }
+    }
+    out
+}
+
+const HEX_UPPER: &[u8; 16] = b"0123456789ABCDEF";
+
+/// Decode percent-encoded sequences (%XX) in a URI path.
+fn percent_decode(input: &str) -> String {
+    let bytes = input.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let (Some(hi), Some(lo)) = (hex_val(bytes[i + 1]), hex_val(bytes[i + 2])) {
+                out.push((hi << 4) | lo);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+fn hex_val(b: u8) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'A'..=b'F' => Some(b - b'A' + 10),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        _ => None,
     }
 }
 
@@ -711,5 +767,85 @@ mod tests {
     #[test]
     fn test_lsp_language_id_unknown() {
         assert_eq!(lsp_language_id("brainfuck"), "brainfuck");
+    }
+
+    // ── percent_encode_path / percent_decode ──
+
+    #[test]
+    fn test_percent_encode_path_no_special() {
+        assert_eq!(percent_encode_path("/home/dev/project/main.rs"), "/home/dev/project/main.rs");
+    }
+
+    #[test]
+    fn test_percent_encode_path_space() {
+        assert_eq!(percent_encode_path("/home/My Projects/file.rs"), "/home/My%20Projects/file.rs");
+    }
+
+    #[test]
+    fn test_percent_encode_path_preserves_colon_slash() {
+        assert_eq!(percent_encode_path("C:/Users/dev/file.rs"), "C:/Users/dev/file.rs");
+    }
+
+    #[test]
+    fn test_percent_encode_path_hash() {
+        assert_eq!(percent_encode_path("/home/C# Project/main.cs"), "/home/C%23%20Project/main.cs");
+    }
+
+    #[test]
+    fn test_percent_decode_basic() {
+        assert_eq!(percent_decode("My%20Projects"), "My Projects");
+    }
+
+    #[test]
+    fn test_percent_decode_no_encoding() {
+        assert_eq!(percent_decode("normal/path"), "normal/path");
+    }
+
+    #[test]
+    fn test_percent_decode_hash() {
+        assert_eq!(percent_decode("C%23%20Project"), "C# Project");
+    }
+
+    #[test]
+    fn test_percent_decode_invalid_sequence() {
+        // Incomplete %X or non-hex chars — pass through unchanged
+        assert_eq!(percent_decode("100%"), "100%");
+        assert_eq!(percent_decode("%GG"), "%GG");
+    }
+
+    #[test]
+    fn test_roundtrip_encode_decode() {
+        let original = "/home/user/My Projects/C# Code/file (1).rs";
+        assert_eq!(percent_decode(&percent_encode_path(original)), original);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_uri_to_relative_windows_with_spaces() {
+        let uri = "file:///C:/My%20Projects/src/main.rs";
+        let root = "C:\\My Projects";
+        assert_eq!(uri_to_relative(uri, root), "src\\main.rs");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_path_to_uri_windows_with_spaces() {
+        let uri = path_to_uri("C:\\My Projects\\file.rs");
+        assert_eq!(uri, "file:///C:/My%20Projects/file.rs");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn test_uri_to_relative_unix_with_spaces() {
+        let uri = "file:///home/My%20Projects/src/main.rs";
+        let root = "/home/My Projects";
+        assert_eq!(uri_to_relative(uri, root), "src/main.rs");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn test_path_to_uri_unix_with_spaces() {
+        let uri = path_to_uri("/home/My Projects/file.rs");
+        assert_eq!(uri, "file:///home/My%20Projects/file.rs");
     }
 }
