@@ -23,20 +23,22 @@ VSCode/VSCodium uses 300–800 MB of RAM by bundling Chromium and running hundre
 ## Features
 
 - **Multi-tab terminals** — split your workflow across multiple terminal sessions with drag-to-reorder tabs
-- **File tree** — sidebar with material file icons, search filter, lazy-loaded directories
+- **File tree** — sidebar with material file icons, search filter, lazy-loaded directories, git status indicators
 - **Code editor** — CodeMirror 6 with syntax highlighting for JS, TS, Rust, Python, Go, C, C++, Java, HTML, CSS, JSON, YAML, Markdown, Dart, TOML, Shell
 - **Markdown preview** — toggle between edit and rendered preview for `.md` files
 - **Dynamic tab names** — terminal tabs update to show the running process
 - **Tab icons** — material file-type icons for file tabs, terminal icon for shells
 - **Quick open** — `Ctrl+P` fuzzy file finder across the entire project
 - **Find in files** — `Ctrl+Shift+F` project-wide text search with highlighted results
-- **File operations** — right-click context menu for new file, new folder, rename, delete
+- **Image preview** — opens PNG, JPG, GIF, WebP, BMP, ICO, AVIF, TIFF with dimensions and file size
+- **File operations** — right-click context menu for new file, new folder, rename (with undo), delete, copy path, open in file manager
 - **Auto-save & crash recovery** — files auto-save after editing (configurable delay), swap files recover unsaved work after a crash
 - **Live file reload** — files edited externally (e.g. from the terminal) auto-update in the editor
 - **Recent folders** — welcome screen shows last 5 opened projects for quick access
 - **Zoom** — `Ctrl+`/`Ctrl-` to adjust font size, `Ctrl+0` to reset
 - **Keyboard-driven** — full shortcut set for tabs, files, and navigation
-- **LSP diagnostics** — auto-detects project language and shows errors/warnings from Dart, Rust, Go, Python, C/C++, or TypeScript language servers
+- **Drag and drop** — drop a folder to open it, drop a file to open it or paste its path into the active terminal
+- **LSP diagnostics** — auto-detects project language and shows errors/warnings in a resizable problems panel (Dart, Rust, Go, Python, C/C++, TypeScript)
 - **Flutter-aware** — auto-detects Flutter projects, provides emulator launcher (warm + cold boot)
 - **Single instance per folder** — opening a folder that's already open in another Volt window focuses that window instead
 - **Settings panel** — `Ctrl+,` opens settings UI with visual controls and a raw JSON editor
@@ -88,7 +90,9 @@ cargo tauri dev
 | `Ctrl+C` | Copy selection in terminal (SIGINT if no selection) |
 | `Ctrl+V` | Paste into terminal |
 | `Ctrl+Backspace` | Delete word backward in terminal |
+| `Shift+Enter` | Newline in terminal (for Claude Code) |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Alt+Left` / `Alt+Right` | Next / previous tab (fallback) |
 | `Ctrl+B` | Toggle sidebar |
 | `Ctrl+,` | Settings |
 | `Ctrl+` / `Ctrl-` | Zoom in / out |
@@ -106,6 +110,7 @@ Volt stores config at `~/.volt/config.json`. Settings are accessible via the gea
 | `editor.autoSave` | `true` | Auto-save files after editing |
 | `editor.autoSaveDelay` | `1500` | Milliseconds after last edit before auto-saving |
 | `ignoredPatterns` | `.git`, `build`, `.dart_tool`, `node_modules`, `.gradle`, `target` | Folders/files to hide from the file tree |
+| `lspServers` | `{}` | Override LSP server commands per language (e.g. `{ "python": { "command": "pyright-langserver", "args": ["--stdio"] } }`) |
 
 ## Tech Stack
 
