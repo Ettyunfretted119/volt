@@ -56,8 +56,14 @@ fn parse_porcelain(output: &str) -> HashMap<String, String> {
 }
 
 #[tauri::command]
-pub fn git_status(path: String) -> Result<GitStatus, String> {
-    let dir = Path::new(&path);
+pub async fn git_status(path: String) -> Result<GitStatus, String> {
+    tokio::task::spawn_blocking(move || git_status_inner(&path))
+        .await
+        .map_err(|e| format!("Git status task failed: {}", e))?
+}
+
+fn git_status_inner(path: &str) -> Result<GitStatus, String> {
+    let dir = Path::new(path);
     let git_root = find_git_root(dir).ok_or_else(|| "Not a git repository".to_string())?;
 
     let output = Command::new("git")
@@ -79,4 +85,69 @@ pub fn git_status(path: String) -> Result<GitStatus, String> {
         files,
         root: git_root.to_string_lossy().to_string(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_porcelain_empty() {
+        let result = parse_porcelain("");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_parse_porcelain_modified() {
+        let result = parse_porcelain(" M src/main.rs\n");
+        assert_eq!(result.get("src/main.rs").map(|s| s.as_str()), Some("M"));
+    }
+
+    #[test]
+    fn test_parse_porcelain_staged_modified() {
+        let result = parse_porcelain("M  src/lib.rs\n");
+        assert_eq!(result.get("src/lib.rs").map(|s| s.as_str()), Some("M"));
+    }
+
+    #[test]
+    fn test_parse_porcelain_added() {
+        let result = parse_porcelain("A  new_file.txt\n");
+        assert_eq!(result.get("new_file.txt").map(|s| s.as_str()), Some("A"));
+    }
+
+    #[test]
+    fn test_parse_porcelain_deleted() {
+        let result = parse_porcelain(" D removed.txt\n");
+        assert_eq!(result.get("removed.txt").map(|s| s.as_str()), Some("D"));
+    }
+
+    #[test]
+    fn test_parse_porcelain_untracked() {
+        let result = parse_porcelain("?? untracked.txt\n");
+        assert_eq!(result.get("untracked.txt").map(|s| s.as_str()), Some("U"));
+    }
+
+    #[test]
+    fn test_parse_porcelain_renamed() {
+        let result = parse_porcelain("R  old.txt -> new.txt\n");
+        assert_eq!(result.get("new.txt").map(|s| s.as_str()), Some("M"));
+        assert!(result.get("old.txt").is_none());
+    }
+
+    #[test]
+    fn test_parse_porcelain_multiple() {
+        let output = " M file1.rs\nA  file2.rs\n?? file3.rs\n D file4.rs\n";
+        let result = parse_porcelain(output);
+        assert_eq!(result.len(), 4);
+        assert_eq!(result["file1.rs"], "M");
+        assert_eq!(result["file2.rs"], "A");
+        assert_eq!(result["file3.rs"], "U");
+        assert_eq!(result["file4.rs"], "D");
+    }
+
+    #[test]
+    fn test_parse_porcelain_short_line_ignored() {
+        let result = parse_porcelain("ab\n");
+        assert!(result.is_empty());
+    }
 }

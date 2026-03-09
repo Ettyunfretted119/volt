@@ -9,6 +9,7 @@ let panelVisible = false;
 let lastCrashTime = 0;
 let cachedDiagnostics = null; // cached sorted array, invalidated on update
 let onHeightChange = null;
+let onRestarted = null;
 
 const statusLint = document.getElementById('status-lint');
 
@@ -85,8 +86,9 @@ function createPanel(initialHeight) {
 
 // ── Public API ──
 
-export function initAnalyzer(initialHeight, heightChangeCallback) {
+export function initAnalyzer(initialHeight, heightChangeCallback, restartedCallback) {
   onHeightChange = heightChangeCallback || null;
+  onRestarted = restartedCallback || null;
   createPanel(initialHeight);
   buildStatusLint();
   statusLint.classList.add('hidden');
@@ -111,6 +113,7 @@ export function initAnalyzer(initialHeight, heightChangeCallback) {
       lastCrashTime = now;
       try {
         await startAnalyzer(folder);
+        if (onRestarted) onRestarted();
       } catch (e) { console.warn('Failed to restart analyzer:', e); }
     } else {
       updateStatusBar();

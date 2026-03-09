@@ -255,7 +255,7 @@ async function loadLanguage(lang) {
   }
 }
 
-export async function createEditorView(content, language, wrapper, fontSize, onModified, onCursorChange) {
+export async function createEditorView(content, language, wrapper, fontSize, onModified, onCursorChange, onDocChange) {
   let originalContent = content;
   let wasModified = false;
 
@@ -275,6 +275,9 @@ export async function createEditorView(content, language, wrapper, fontSize, onM
         wasModified = isModified;
         onModified(isModified);
       }
+    }
+    if (update.docChanged && onDocChange) {
+      onDocChange();
     }
     if (onCursorChange && (update.selectionSet || update.docChanged)) {
       const pos = update.state.selection.main.head;

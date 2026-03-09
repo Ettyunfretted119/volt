@@ -162,6 +162,7 @@ fn detect_language(ext: &str) -> &'static str {
 
 #[tauri::command]
 pub fn read_file(path: String) -> Result<FileContent, String> {
+    validate_path(&path)?;
     let file_path = Path::new(&path);
     if !file_path.is_file() {
         return Err(format!("Not a file: {}", path));
@@ -221,6 +222,7 @@ fn detect_mime(ext: &str) -> Option<&'static str> {
 
 #[tauri::command]
 pub fn read_image_file(path: String) -> Result<ImageContent, String> {
+    validate_path(&path)?;
     let file_path = Path::new(&path);
     if !file_path.is_file() {
         return Err(format!("Not a file: {}", path));
@@ -274,6 +276,7 @@ pub(crate) fn atomic_write(path: &Path, content: &[u8]) -> Result<(), String> {
 
 #[tauri::command]
 pub fn save_file(path: String, content: String) -> Result<(), String> {
+    validate_path(&path)?;
     atomic_write(Path::new(&path), content.as_bytes())
 }
 
@@ -287,22 +290,25 @@ fn swap_path(path: &str) -> PathBuf {
 
 #[tauri::command]
 pub fn write_swap_file(path: String, content: String) -> Result<(), String> {
+    validate_path(&path)?;
     fs::write(swap_path(&path), &content)
         .map_err(|e| format!("Failed to write swap file: {}", e))
 }
 
 #[tauri::command]
-pub fn check_swap_file(path: String) -> Option<String> {
+pub fn check_swap_file(path: String) -> Result<Option<String>, String> {
+    validate_path(&path)?;
     let sp = swap_path(&path);
     if sp.is_file() {
-        fs::read_to_string(&sp).ok()
+        Ok(fs::read_to_string(&sp).ok())
     } else {
-        None
+        Ok(None)
     }
 }
 
 #[tauri::command]
 pub fn delete_swap_file(path: String) -> Result<(), String> {
+    validate_path(&path)?;
     let sp = swap_path(&path);
     if sp.exists() {
         fs::remove_file(&sp).map_err(|e| format!("Failed to delete swap file: {}", e))?;
@@ -385,6 +391,7 @@ pub async fn list_all_files(path: String, ignored: Option<Vec<String>>) -> Resul
 }
 
 fn list_all_files_inner(path: String, ignored: Option<Vec<String>>) -> Result<Vec<String>, String> {
+    validate_path(&path)?;
     let root = Path::new(&path);
     if !root.is_dir() {
         return Err(format!("Not a directory: {}", path));
@@ -453,6 +460,7 @@ fn search_in_files_inner(
     query: String,
     ignored: Option<Vec<String>>,
 ) -> Result<Vec<SearchMatch>, String> {
+    validate_path(&path)?;
     let root = Path::new(&path);
     let ignored_patterns: Vec<String> = ignored.unwrap_or_else(|| {
         DEFAULT_IGNORED.iter().map(|s| s.to_string()).collect()
@@ -536,4 +544,105 @@ pub fn open_in_file_manager(path: String) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── detect_language ──
+
+    #[test]
+    fn test_detect_language_common() {
+        assert_eq!(detect_language("rs"), "rust");
+        assert_eq!(detect_language("js"), "javascript");
+        assert_eq!(detect_language("ts"), "typescript");
+        assert_eq!(detect_language("py"), "python");
+        assert_eq!(detect_language("dart"), "dart");
+        assert_eq!(detect_language("go"), "go");
+        assert_eq!(detect_language("html"), "html");
+        assert_eq!(detect_language("css"), "css");
+        assert_eq!(detect_language("json"), "json");
+        assert_eq!(detect_language("md"), "markdown");
+        assert_eq!(detect_language("toml"), "toml");
+        assert_eq!(detect_language("sh"), "shell");
+    }
+
+    #[test]
+    fn test_detect_language_variants() {
+        assert_eq!(detect_language("jsx"), "javascript");
+        assert_eq!(detect_language("tsx"), "typescript");
+        assert_eq!(detect_language("mjs"), "javascript");
+        assert_eq!(detect_language("pyw"), "python");
+        assert_eq!(detect_language("yml"), "yaml");
+        assert_eq!(detect_language("htm"), "html");
+        assert_eq!(detect_language("scss"), "css");
+        assert_eq!(detect_language("mdx"), "markdown");
+    }
+
+    #[test]
+    fn test_detect_language_unknown() {
+        assert_eq!(detect_language("xyz"), "plain");
+        assert_eq!(detect_language(""), "plain");
+    }
+
+    // ── is_binary ──
+
+    #[test]
+    fn test_is_binary_text() {
+        assert!(!is_binary(b"Hello, world!\nLine 2\n"));
+    }
+
+    #[test]
+    fn test_is_binary_with_null() {
+        assert!(is_binary(b"Hello\x00world"));
+    }
+
+    #[test]
+    fn test_is_binary_empty() {
+        assert!(!is_binary(b""));
+    }
+
+    // ── find_ascii_case_insensitive ──
+
+    #[test]
+    fn test_find_case_insensitive_basic() {
+        let haystack = b"Hello World";
+        let needle = b"hello";
+        assert_eq!(find_ascii_case_insensitive(haystack, needle), Some(0));
+    }
+
+    #[test]
+    fn test_find_case_insensitive_middle() {
+        let haystack = b"foo Bar baz";
+        let needle = b"bar";
+        assert_eq!(find_ascii_case_insensitive(haystack, needle), Some(4));
+    }
+
+    #[test]
+    fn test_find_case_insensitive_not_found() {
+        let haystack = b"Hello World";
+        let needle = b"xyz";
+        assert_eq!(find_ascii_case_insensitive(haystack, needle), None);
+    }
+
+    #[test]
+    fn test_find_case_insensitive_empty_needle() {
+        let haystack = b"Hello";
+        assert_eq!(find_ascii_case_insensitive(haystack, b""), Some(0));
+    }
+
+    #[test]
+    fn test_find_case_insensitive_needle_longer() {
+        let haystack = b"Hi";
+        let needle = b"hello";
+        assert_eq!(find_ascii_case_insensitive(haystack, needle), None);
+    }
+
+    #[test]
+    fn test_find_case_insensitive_exact() {
+        let haystack = b"test";
+        let needle = b"test";
+        assert_eq!(find_ascii_case_insensitive(haystack, needle), Some(0));
+    }
 }

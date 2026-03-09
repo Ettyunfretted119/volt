@@ -2,6 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
+
+static CONFIG_CACHE: std::sync::LazyLock<Mutex<Option<VoltConfig>>> =
+    std::sync::LazyLock::new(|| Mutex::new(None));
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -165,6 +169,13 @@ fn ensure_config_dir() -> Result<(), String> {
 
 #[tauri::command]
 pub fn load_config() -> Result<VoltConfig, String> {
+    // Return cached config if available
+    if let Ok(cache) = CONFIG_CACHE.lock() {
+        if let Some(ref cached) = *cache {
+            return Ok(cached.clone());
+        }
+    }
+
     let path = config_path();
     if !path.exists() {
         let config = VoltConfig::default();
@@ -185,6 +196,11 @@ pub fn load_config() -> Result<VoltConfig, String> {
             VoltConfig::default()
         }
     };
+
+    // Populate cache
+    if let Ok(mut cache) = CONFIG_CACHE.lock() {
+        *cache = Some(config.clone());
+    }
 
     Ok(config)
 }
@@ -214,5 +230,11 @@ pub fn save_config(mut config: VoltConfig) -> Result<(), String> {
     let content = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
     crate::fs::atomic_write(&config_path(), content.as_bytes())?;
+
+    // Update cache after successful write
+    if let Ok(mut cache) = CONFIG_CACHE.lock() {
+        *cache = Some(config);
+    }
+
     Ok(())
 }

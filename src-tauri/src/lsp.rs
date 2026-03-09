@@ -201,6 +201,9 @@ struct LspState {
     process: Option<Child>,
     writer: Option<Box<dyn Write + Send>>,
     request_id: u64,
+    initialized: bool,
+    pending_messages: Vec<serde_json::Value>,
+    document_versions: std::collections::HashMap<String, i32>,
 }
 
 static LSP: std::sync::LazyLock<Mutex<LspState>> =
@@ -208,6 +211,9 @@ static LSP: std::sync::LazyLock<Mutex<LspState>> =
         process: None,
         writer: None,
         request_id: 0,
+        initialized: false,
+        pending_messages: Vec::new(),
+        document_versions: std::collections::HashMap::new(),
     }));
 
 fn next_request_id() -> Result<u64, String> {
@@ -254,6 +260,55 @@ fn uri_to_relative(uri: &str, root: &str) -> String {
         .unwrap_or(&path)
         .trim_start_matches(std::path::MAIN_SEPARATOR)
         .to_string()
+}
+
+// ── Document Sync Helpers ──
+
+fn path_to_uri(path: &str) -> String {
+    #[cfg(target_os = "windows")]
+    {
+        let normalized = path.replace('\\', "/");
+        format!("file:///{}", normalized.trim_start_matches('/'))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        format!("file://{}", path)
+    }
+}
+
+fn lsp_language_id(language: &str) -> &str {
+    match language {
+        "javascript" => "javascript",
+        "typescript" => "typescript",
+        "rust" => "rust",
+        "python" => "python",
+        "dart" => "dart",
+        "go" => "go",
+        "c" => "c",
+        "cpp" => "cpp",
+        "java" => "java",
+        "html" => "html",
+        "css" => "css",
+        "json" => "json",
+        "yaml" => "yaml",
+        "toml" => "toml",
+        "markdown" => "markdown",
+        "shell" => "shellscript",
+        other => other,
+    }
+}
+
+/// Send a notification immediately if initialized, otherwise queue it.
+fn send_or_queue(msg: serde_json::Value) -> Result<(), String> {
+    let mut state = LSP.lock().map_err(|e| format!("Lock error: {}", e))?;
+    if state.initialized {
+        if let Some(ref mut writer) = state.writer {
+            send_lsp_message(writer.as_mut(), &msg)?;
+        }
+    } else {
+        state.pending_messages.push(msg);
+    }
+    Ok(())
 }
 
 // ── Tauri Commands ──
@@ -317,6 +372,14 @@ pub fn start_analyzer(app: AppHandle, project_path: String) -> Result<Option<Str
                 "textDocument": {
                     "publishDiagnostics": {
                         "relatedInformation": true
+                    },
+                    "synchronization": {
+                        "openClose": true,
+                        "change": 1,
+                        "didSave": true,
+                        "willSave": false,
+                        "willSaveWaitUntil": false,
+                        "dynamicRegistration": false
                     }
                 }
             }
@@ -384,7 +447,7 @@ pub fn start_analyzer(app: AppHandle, project_path: String) -> Result<Option<Str
                 Err(_) => continue,
             };
 
-            // Handle initialize response → send initialized notification
+            // Handle initialize response → send initialized notification + flush pending
             if !initialized {
                 if msg.get("id").and_then(|v| v.as_u64()) == Some(expected_init_id) && msg.get("result").is_some() {
                     initialized = true;
@@ -396,6 +459,14 @@ pub fn start_analyzer(app: AppHandle, project_path: String) -> Result<Option<Str
                     if let Ok(mut state) = LSP.lock() {
                         if let Some(ref mut writer) = state.writer {
                             let _ = send_lsp_message(writer.as_mut(), &notif);
+                        }
+                        // Mark as initialized and flush any queued messages
+                        state.initialized = true;
+                        let pending: Vec<serde_json::Value> = state.pending_messages.drain(..).collect();
+                        for queued_msg in pending {
+                            if let Some(ref mut writer) = state.writer {
+                                let _ = send_lsp_message(writer.as_mut(), &queued_msg);
+                            }
                         }
                     }
                 }
@@ -468,6 +539,9 @@ fn stop_analyzer_internal() -> Result<(), String> {
     state.process = None;
     state.writer = None;
     state.request_id = 0;
+    state.initialized = false;
+    state.pending_messages.clear();
+    state.document_versions.clear();
 
     Ok(())
 }
@@ -475,4 +549,167 @@ fn stop_analyzer_internal() -> Result<(), String> {
 #[tauri::command]
 pub fn stop_analyzer() -> Result<(), String> {
     stop_analyzer_internal()
+}
+
+// ── Document Sync Commands ──
+
+#[tauri::command]
+pub fn lsp_did_open(path: String, language: String, content: String) -> Result<(), String> {
+    let uri = path_to_uri(&path);
+    let language_id = lsp_language_id(&language).to_string();
+
+    // Track document version
+    {
+        let mut state = LSP.lock().map_err(|e| format!("Lock error: {}", e))?;
+        state.document_versions.insert(uri.clone(), 1);
+    }
+
+    let msg = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "languageId": language_id,
+                "version": 1,
+                "text": content
+            }
+        }
+    });
+
+    send_or_queue(msg)
+}
+
+#[tauri::command]
+pub fn lsp_did_change(path: String, content: String) -> Result<(), String> {
+    let uri = path_to_uri(&path);
+
+    let version = {
+        let mut state = LSP.lock().map_err(|e| format!("Lock error: {}", e))?;
+        let v = state.document_versions.entry(uri.clone()).or_insert(0);
+        *v += 1;
+        *v
+    };
+
+    let msg = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didChange",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "version": version
+            },
+            "contentChanges": [{
+                "text": content
+            }]
+        }
+    });
+
+    send_or_queue(msg)
+}
+
+#[tauri::command]
+pub fn lsp_did_save(path: String) -> Result<(), String> {
+    let uri = path_to_uri(&path);
+
+    let msg = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didSave",
+        "params": {
+            "textDocument": {
+                "uri": uri
+            }
+        }
+    });
+
+    send_or_queue(msg)
+}
+
+#[tauri::command]
+pub fn lsp_did_close(path: String) -> Result<(), String> {
+    let uri = path_to_uri(&path);
+
+    // Remove version tracking
+    {
+        let mut state = LSP.lock().map_err(|e| format!("Lock error: {}", e))?;
+        state.document_versions.remove(&uri);
+    }
+
+    let msg = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didClose",
+        "params": {
+            "textDocument": {
+                "uri": uri
+            }
+        }
+    });
+
+    send_or_queue(msg)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_uri_to_relative_windows() {
+        let uri = "file:///C:/Users/dev/project/src/main.rs";
+        let root = "C:\\Users\\dev\\project";
+        assert_eq!(uri_to_relative(uri, root), "src\\main.rs");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_uri_to_relative_windows_forward_slashes() {
+        let uri = "file:///C:/Users/dev/project/lib.rs";
+        let root = "C:/Users/dev/project";
+        assert_eq!(uri_to_relative(uri, root), "lib.rs");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn test_uri_to_relative_unix() {
+        let uri = "file:///home/dev/project/src/main.rs";
+        let root = "/home/dev/project";
+        assert_eq!(uri_to_relative(uri, root), "src/main.rs");
+    }
+
+    #[test]
+    fn test_uri_to_relative_no_prefix() {
+        let uri = "some/path";
+        let root = "other";
+        let result = uri_to_relative(uri, root);
+        assert!(!result.is_empty());
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn test_path_to_uri_windows() {
+        let uri = path_to_uri("C:\\Users\\dev\\file.rs");
+        assert_eq!(uri, "file:///C:/Users/dev/file.rs");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn test_path_to_uri_unix() {
+        let uri = path_to_uri("/home/dev/file.rs");
+        assert_eq!(uri, "file:///home/dev/file.rs");
+    }
+
+    #[test]
+    fn test_lsp_language_id_known() {
+        assert_eq!(lsp_language_id("javascript"), "javascript");
+        assert_eq!(lsp_language_id("typescript"), "typescript");
+        assert_eq!(lsp_language_id("rust"), "rust");
+        assert_eq!(lsp_language_id("python"), "python");
+        assert_eq!(lsp_language_id("dart"), "dart");
+        assert_eq!(lsp_language_id("shell"), "shellscript");
+    }
+
+    #[test]
+    fn test_lsp_language_id_unknown() {
+        assert_eq!(lsp_language_id("brainfuck"), "brainfuck");
+    }
 }

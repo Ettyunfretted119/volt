@@ -99,6 +99,10 @@ async function openFolder(path) {
   // Release previous folder lock before switching
   try { await invoke('release_folder_lock'); } catch (e) { console.warn('Failed to release folder lock:', e); }
 
+  // Acquire per-folder lock BEFORE loading directory so validate_path
+  // knows the new project root (acquire_folder_lock sets PROJECT_ROOT)
+  try { await invoke('acquire_folder_lock', { folder: path }); } catch (e) { console.warn('Failed to acquire folder lock:', e); }
+
   currentFolder = path;
   await saveLastFolder(path);
 
@@ -140,9 +144,6 @@ async function openFolder(path) {
   // Start LSP for any supported language (auto-detected by Rust)
   await stopAnalyzer();
   await startAnalyzer(path);
-
-  // Acquire per-folder lock so other Volt instances know this folder is open
-  try { await invoke('acquire_folder_lock', { folder: path }); } catch (e) { console.warn('Failed to acquire folder lock:', e); }
 
   // Restore previously open file tabs for this folder
   await restoreTabState(path);
@@ -445,6 +446,7 @@ const openingFiles = new Set(); // prevents duplicate opens from rapid clicks
 const saveCooldowns = new Map(); // path -> timestamp, ignore watcher events right after save
 const autoSaveTimers = new Map(); // filePath -> timeout ID for debounced auto-save
 const swapWriteTimers = new Map(); // filePath -> timeout ID for debounced swap writes
+const lspChangeTimers = new Map(); // filePath -> timeout ID for debounced LSP didChange
 const statusCursor = document.getElementById('status-cursor');
 
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico', 'avif', 'tiff', 'tif']);
@@ -483,6 +485,11 @@ async function saveActiveFile(tab) {
     clearTimeout(swapWriteTimers.get(tab.filePath));
     swapWriteTimers.delete(tab.filePath);
     invoke('delete_swap_file', { path: tab.filePath }).catch(e => console.warn('Failed to delete swap file:', e));
+    clearTimeout(lspChangeTimers.get(tab.filePath));
+    lspChangeTimers.delete(tab.filePath);
+    // Send final didChange (in case debounce timer hadn't fired yet), then didSave
+    invoke('lsp_did_change', { path: tab.filePath, content }).catch(e => console.warn('LSP didChange failed:', e));
+    invoke('lsp_did_save', { path: tab.filePath }).catch(e => console.warn('LSP didSave failed:', e));
     // Refresh git status indicators after save
     refreshGitStatus();
   } catch (err) {
@@ -512,6 +519,17 @@ function scheduleAutoSave(tab) {
   }, delay));
 }
 
+function scheduleLspChange(tab) {
+  clearTimeout(lspChangeTimers.get(tab.filePath));
+  lspChangeTimers.set(tab.filePath, setTimeout(() => {
+    if (tab.editorView) {
+      const content = getEditorContent(tab.editorView);
+      invoke('lsp_did_change', { path: tab.filePath, content })
+        .catch(e => console.warn('LSP didChange failed:', e));
+    }
+  }, 300));
+}
+
 function migrateTimerKeys(oldPath, newPath) {
   if (autoSaveTimers.has(oldPath)) {
     autoSaveTimers.set(newPath, autoSaveTimers.get(oldPath));
@@ -524,6 +542,10 @@ function migrateTimerKeys(oldPath, newPath) {
   if (saveCooldowns.has(oldPath)) {
     saveCooldowns.set(newPath, saveCooldowns.get(oldPath));
     saveCooldowns.delete(oldPath);
+  }
+  if (lspChangeTimers.has(oldPath)) {
+    lspChangeTimers.set(newPath, lspChangeTimers.get(oldPath));
+    lspChangeTimers.delete(oldPath);
   }
 }
 
@@ -538,6 +560,13 @@ function handleFileRenamed(oldPath, newPath, newName, isDir) {
       invoke('watch_file', { path: newFilePath }).catch(e => console.warn('Failed to watch file:', e));
       invoke('delete_swap_file', { path: oldFilePath }).catch(e => console.warn('Failed to delete swap file:', e));
       migrateTimerKeys(oldFilePath, newFilePath);
+      // Notify LSP of path change
+      invoke('lsp_did_close', { path: oldFilePath }).catch(e => console.warn('LSP didClose failed:', e));
+      if (tab.editorView && tab.language) {
+        const content = getEditorContent(tab.editorView);
+        invoke('lsp_did_open', { path: newFilePath, language: tab.language, content })
+          .catch(e => console.warn('LSP didOpen failed:', e));
+      }
     }
   } else {
     const tab = updateFileTabPath(oldPath, newPath, newName);
@@ -546,6 +575,13 @@ function handleFileRenamed(oldPath, newPath, newName, isDir) {
       invoke('watch_file', { path: newPath }).catch(e => console.warn('Failed to watch file:', e));
       invoke('delete_swap_file', { path: oldPath }).catch(e => console.warn('Failed to delete swap file:', e));
       migrateTimerKeys(oldPath, newPath);
+      // Notify LSP of rename: close old URI, open new URI
+      invoke('lsp_did_close', { path: oldPath }).catch(e => console.warn('LSP didClose failed:', e));
+      if (tab.editorView && tab.language) {
+        const content = getEditorContent(tab.editorView);
+        invoke('lsp_did_open', { path: newPath, language: tab.language, content })
+          .catch(e => console.warn('LSP didOpen failed:', e));
+      }
     }
   }
 }
@@ -627,6 +663,7 @@ async function openFile(entry, targetLine) {
     type: 'file',
     name: fileData.file_name,
     filePath: entry.path,
+    language: fileData.language,
     wrapper,
     editorView: null,
     modified: false,
@@ -644,6 +681,10 @@ async function openFile(entry, targetLine) {
     }
   };
 
+  const onDocChange = () => {
+    scheduleLspChange(tab);
+  };
+
   let view;
   try {
     view = await createEditorView(
@@ -652,7 +693,8 @@ async function openFile(entry, targetLine) {
       wrapper,
       cfg.fontSize,
       onModified,
-      onCursorChange
+      onCursorChange,
+      onDocChange
     );
   } catch (e) {
     console.warn('Failed to create editor view:', e);
@@ -678,6 +720,11 @@ async function openFile(entry, targetLine) {
 
   // Start watching for external changes
   invoke('watch_file', { path: entry.path }).catch(e => console.warn('Failed to watch file:', e));
+
+  // Notify LSP that this document is now open
+  const openContent = recoveredContent !== null ? recoveredContent : fileData.content;
+  invoke('lsp_did_open', { path: entry.path, language: fileData.language, content: openContent })
+    .catch(e => console.warn('LSP didOpen failed:', e));
 }
 
 async function openImageFile(entry) {
@@ -924,6 +971,15 @@ async function init() {
     if (!config) config = {};
     config.diagnosticsPanelHeight = height;
     invoke('save_config', { config }).catch(e => console.warn('Failed to save config:', e));
+  }, () => {
+    // On analyzer restart: re-send didOpen for all open file tabs
+    for (const tab of getAllTabs()) {
+      if (tab.type === 'file' && tab.editorView && tab.language) {
+        const content = getEditorContent(tab.editorView);
+        invoke('lsp_did_open', { path: tab.filePath, language: tab.language, content })
+          .catch(e => console.warn('LSP didOpen failed:', e));
+      }
+    }
   });
   initEmulator();
   if (config?.terminal) setTerminalConfig(config.terminal);
@@ -972,10 +1028,13 @@ async function init() {
     if (tab.type === 'file' && tab.filePath) {
       invoke('unwatch_file', { path: tab.filePath }).catch(e => console.warn('Failed to unwatch file:', e));
       invoke('delete_swap_file', { path: tab.filePath }).catch(e => console.warn('Failed to delete swap file:', e));
+      invoke('lsp_did_close', { path: tab.filePath }).catch(e => console.warn('LSP didClose failed:', e));
       clearTimeout(autoSaveTimers.get(tab.filePath));
       autoSaveTimers.delete(tab.filePath);
       clearTimeout(swapWriteTimers.get(tab.filePath));
       swapWriteTimers.delete(tab.filePath);
+      clearTimeout(lspChangeTimers.get(tab.filePath));
+      lspChangeTimers.delete(tab.filePath);
     }
   });
 
