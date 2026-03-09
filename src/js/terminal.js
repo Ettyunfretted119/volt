@@ -228,6 +228,16 @@ export async function createTerminalTab() {
     if (e.ctrlKey && e.key === 'Tab') return false;
     if (e.ctrlKey && e.shiftKey && ['T', 'W', 'F'].includes(e.key)) return false;
 
+    // Shift+Enter — send ESC + newline so apps like Claude Code can
+    // distinguish it from plain Enter.  e.preventDefault() is critical:
+    // Enter fires an `input` event on xterm's hidden textarea (separate
+    // from keydown), which would send an extra \r via onData.
+    if (e.shiftKey && !e.ctrlKey && !e.altKey && e.key === 'Enter') {
+      e.preventDefault();
+      invoke('write_terminal', { id: ptyId, data: '\x1b\n' }).catch(() => {});
+      return false;
+    }
+
     // Ctrl+C — copy selection (if any), otherwise let SIGINT through
     if (e.ctrlKey && !e.shiftKey && e.key === 'c') {
       if (terminal.hasSelection()) {
