@@ -49,9 +49,12 @@
   --border: #222222;
   --border-subtle: #2a2a2a;
   --scrollbar: #3a3a44;
+  --text-bright: #ffffff;
   --text-dim: #aaa;
   --text-placeholder: #7a7a8a;
+  --bg-dark: #111111;
   --bg-elevated: #1e1e1e;
+  --border-medium: #333;
   --error: #f44747;
   --git-modified: #e2c08d;
   --git-added: #73c991;
@@ -85,7 +88,7 @@ button {
   font-size: inherit;
 }
 button:hover {
-  color: #ffffff;
+  color: var(--text-bright);
 }
 
 /* ── App layout ── */
@@ -100,7 +103,7 @@ button:hover {
   width: 250px;
   min-width: 150px;
   max-width: 500px;
-  background: #111111;
+  background: var(--bg-dark);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -213,7 +216,7 @@ button:hover {
   outline: none;
 }
 #file-search::placeholder {
-  color: #6a6a7a;
+  color: var(--text-secondary);
 }
 #file-search:focus {
   border-color: var(--purple);
@@ -473,7 +476,7 @@ button:hover {
   padding: 2px 7px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #555;
+  color: var(--text-placeholder);
   min-width: 28px;
   text-align: center;
   line-height: 1.6;
@@ -561,7 +564,7 @@ button:hover {
 
 .status-credit {
   font-size: 10px;
-  color: #6a6a78;
+  color: var(--text-secondary);
   letter-spacing: 0.3px;
 }
 
@@ -612,7 +615,7 @@ button:hover {
 }
 .tab.active {
   background: var(--bg);
-  color: #ffffff;
+  color: var(--text-bright);
 }
 .tab.active::before {
   content: '';
@@ -653,7 +656,7 @@ button:hover {
   line-height: 1;
 }
 .tab-close:hover {
-  color: #ffffff;
+  color: var(--text-bright);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -773,7 +776,7 @@ button:hover {
 }
 
 #status-folder {
-  color: #6a6a78;
+  color: var(--text-secondary);
   max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -794,7 +797,7 @@ button:hover {
 }
 
 #status-resources {
-  color: #6a6a78;
+  color: var(--text-secondary);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: -0.2px;
@@ -820,7 +823,7 @@ button:hover {
 }
 .context-menu-item:hover {
   background: rgba(180, 93, 255, 0.12);
-  color: #ffffff;
+  color: var(--text-bright);
 }
 .context-menu-separator {
   height: 1px;
@@ -862,7 +865,7 @@ button:hover {
   justify-content: space-between;
   padding: 0 14px;
   height: 34px;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid var(--bg-elevated);
   flex-shrink: 0;
   background: #161616;
 }
@@ -937,7 +940,7 @@ button:hover {
 }
 
 .diag-file {
-  color: #555566;
+  color: var(--text-muted);
   flex-shrink: 0;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -955,7 +958,7 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #333340;
+  color: var(--text-muted);
   font-size: 12px;
   letter-spacing: 0.3px;
 }
@@ -987,7 +990,7 @@ button:hover {
 
 .lint-restart {
   font-size: 12px;
-  color: #555;
+  color: var(--text-placeholder);
   padding: 0 2px;
   margin-left: 2px;
   transition: color 0.15s;
@@ -999,7 +1002,7 @@ button:hover {
 /* ── Emulator button & dropdown ── */
 .status-emulator-btn {
   font-size: 11px;
-  color: #6a6a78;
+  color: var(--text-secondary);
   cursor: pointer;
   letter-spacing: -0.2px;
   transition: color 0.15s;
@@ -1032,7 +1035,7 @@ button:hover {
   justify-content: space-between;
   padding: 0 14px;
   height: 36px;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid var(--bg-elevated);
   font-size: 10px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -1175,7 +1178,7 @@ button:hover {
 .emu-empty {
   padding: 24px 16px;
   text-align: center;
-  color: #333340;
+  color: var(--text-muted);
   font-size: 12px;
   letter-spacing: 0.3px;
 }
@@ -1183,7 +1186,7 @@ button:hover {
 /* ── Settings ── */
 .status-settings-btn {
   font-size: 13px;
-  color: #555;
+  color: var(--text-placeholder);
   transition: color 0.15s;
   vertical-align: middle;
   position: relative;
@@ -1247,12 +1250,12 @@ button:hover {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.3px;
-  color: #55555f;
+  color: var(--text-muted);
   border-bottom: 2px solid transparent;
   transition: color 0.15s, border-color 0.15s;
 }
 .settings-tab:hover {
-  color: #9a9aaa;
+  color: var(--text-dim);
 }
 .settings-tab.active {
   color: var(--text);
@@ -1324,7 +1327,7 @@ button:hover {
 
 .settings-row-desc {
   font-size: 11px;
-  color: #44444e;
+  color: var(--text-muted);
 }
 
 /* Unified input base */
@@ -1430,7 +1433,7 @@ button:hover {
 .settings-json-editor {
   width: 100%;
   min-height: 240px;
-  background: #111111;
+  background: var(--bg-dark);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 12px;
@@ -1485,7 +1488,7 @@ button:hover {
 .settings-save {
   background: var(--purple);
   border: none;
-  color: #ffffff;
+  color: var(--text-bright);
   padding: 5px 20px;
   border-radius: 4px;
   font-size: 12px;
@@ -1697,7 +1700,7 @@ button:hover {
 
 /* Code blocks */
 .md-preview pre {
-  background: #111111;
+  background: var(--bg-dark);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 16px 20px;
@@ -1745,7 +1748,7 @@ button:hover {
   margin: 4px 0;
 }
 .md-preview li::marker {
-  color: #555;
+  color: var(--text-placeholder);
 }
 
 /* Task lists (GFM) */
@@ -1863,7 +1866,7 @@ button:hover {
 }
 .prompt-dialog {
   background: var(--bg-surface);
-  border: 1px solid #333;
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   padding: 16px 20px;
   width: 340px;
@@ -1878,7 +1881,7 @@ button:hover {
 .prompt-input {
   width: 100%;
   background: var(--bg);
-  border: 1px solid #333;
+  border: 1px solid var(--border-medium);
   border-radius: 4px;
   padding: 8px 10px;
   color: var(--text);
@@ -1908,7 +1911,7 @@ button:hover {
   width: 520px;
   max-width: 90vw;
   background: var(--bg-surface);
-  border: 1px solid #333;
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6);
   overflow: hidden;
@@ -1961,7 +1964,7 @@ button:hover {
   flex-shrink: 0;
 }
 .qo-path {
-  color: #555;
+  color: var(--text-placeholder);
   font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1970,7 +1973,7 @@ button:hover {
 .qo-empty {
   padding: 20px;
   text-align: center;
-  color: #555;
+  color: var(--text-placeholder);
   font-size: 13px;
 }
 
@@ -1991,7 +1994,7 @@ button:hover {
   width: 600px;
   max-width: 90vw;
   background: var(--bg-surface);
-  border: 1px solid #333;
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6);
   overflow: hidden;
@@ -2043,7 +2046,7 @@ button:hover {
 #search-status {
   padding: 6px 16px;
   font-size: 11px;
-  color: #555;
+  color: var(--text-placeholder);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -2051,7 +2054,7 @@ button:hover {
   display: none;
 }
 .search-group {
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid var(--bg-elevated);
 }
 .search-file-header {
   display: flex;
@@ -2086,7 +2089,7 @@ button:hover {
   background: rgba(180, 93, 255, 0.08);
 }
 .search-line-num {
-  color: #555;
+  color: var(--text-placeholder);
   min-width: 32px;
   text-align: right;
   flex-shrink: 0;
@@ -2109,7 +2112,7 @@ button:hover {
 #status-cursor {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #6a6a78;
+  color: var(--text-secondary);
   letter-spacing: -0.2px;
 }
 
@@ -2136,7 +2139,7 @@ button:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #6a6a78;
+  color: var(--text-secondary);
   font-size: 11px;
   cursor: pointer;
   padding: 2px 4px;
@@ -2160,7 +2163,7 @@ button:hover {
   transition: border-color 0.15s, background 0.15s;
 }
 .cm-search input[type="checkbox"]:hover {
-  border-color: #555;
+  border-color: var(--text-placeholder);
 }
 .cm-search input[type="checkbox"]:checked {
   background: rgba(180, 93, 255, 0.2);
@@ -2203,7 +2206,7 @@ button:hover {
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 4px 10px;
-  color: #9a9aaa;
+  color: var(--text-dim);
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
   font-size: 11px;
   font-weight: 500;
@@ -2269,7 +2272,7 @@ button:hover {
   animation: toast-out 0.15s ease-in forwards;
 }
 .undo-toast-message {
-  color: #9a9aaa;
+  color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 320px;
@@ -2297,7 +2300,7 @@ button:hover {
   transition: color 0.12s;
 }
 .undo-toast-dismiss:hover {
-  color: #9a9aaa;
+  color: var(--text-dim);
 }
 .undo-toast-timer {
   position: absolute;
