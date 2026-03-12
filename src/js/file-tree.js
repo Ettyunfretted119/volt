@@ -132,13 +132,9 @@ async function restoreExpandedPaths(expandedSet) {
 export async function loadDirectory(path, preserveState = false) {
   rootPath = path;
 
-  // Save expanded state before clearing
+  // Save expanded state and scroll position before fetching
   const expandedPaths = preserveState ? getExpandedPaths() : null;
-
-  // Save scroll position
   const scrollTop = fileTreeEl.scrollTop;
-
-  fileTreeEl.innerHTML = '';
 
   // Increment generation so any in-flight call becomes stale
   const thisGen = ++loadGeneration;
@@ -166,6 +162,8 @@ export async function loadDirectory(path, preserveState = false) {
     // to prevent duplicate entries from appending to the same container
     if (thisGen !== loadGeneration) return;
 
+    // Clear old tree only after new data is ready (avoids empty-tree flash)
+    fileTreeEl.innerHTML = '';
     renderEntries(fileTreeEl, entries, 0);
 
     // Restore expanded folders and scroll position

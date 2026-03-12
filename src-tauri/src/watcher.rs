@@ -43,6 +43,33 @@ pub struct DirWatcherState {
     watched_root: Option<PathBuf>,
 }
 
+/// Directories whose changes should NOT trigger a tree refresh.
+const IGNORED_SEGMENTS: &[&str] = &[
+    ".git",
+    "node_modules",
+    ".dart_tool",
+    ".idea",
+    ".vscode",
+    "target",       // Rust build output
+    "__pycache__",
+    ".cache",
+    "build",
+];
+
+fn is_noisy_path(path: &std::path::Path) -> bool {
+    for component in path.components() {
+        if let std::path::Component::Normal(s) = component {
+            let s = s.to_string_lossy();
+            if IGNORED_SEGMENTS.contains(&s.as_ref())
+                || s.ends_with(".volt-swap")
+            {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 impl DirWatcherState {
     pub fn new(app_handle: AppHandle) -> Self {
         let watcher = RecommendedWatcher::new(
@@ -53,6 +80,9 @@ impl DirWatcherState {
                         EventKind::Create(_) | EventKind::Remove(_) | EventKind::Modify(notify::event::ModifyKind::Name(_))
                     ) {
                         for path in &event.paths {
+                            if is_noisy_path(path) {
+                                continue;
+                            }
                             let path_str = path.to_string_lossy().to_string();
                             let _ = app_handle.emit("directory-changed", &path_str);
                         }
