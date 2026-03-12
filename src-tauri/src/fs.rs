@@ -461,14 +461,20 @@ pub struct SearchMatch {
     pub column: usize,
 }
 
+#[derive(Debug, Serialize)]
+pub struct SearchResults {
+    pub results: Vec<SearchMatch>,
+    pub truncated: bool,
+}
+
 #[tauri::command]
 pub async fn search_in_files(
     path: String,
     query: String,
     ignored: Option<Vec<String>>,
-) -> Result<Vec<SearchMatch>, String> {
+) -> Result<SearchResults, String> {
     if query.is_empty() {
-        return Ok(Vec::new());
+        return Ok(SearchResults { results: Vec::new(), truncated: false });
     }
     tokio::task::spawn_blocking(move || {
         search_in_files_inner(path, query, ignored)
@@ -481,7 +487,7 @@ fn search_in_files_inner(
     path: String,
     query: String,
     ignored: Option<Vec<String>>,
-) -> Result<Vec<SearchMatch>, String> {
+) -> Result<SearchResults, String> {
     validate_path(&path)?;
     let root = Path::new(&path);
     let ignored_patterns: Vec<String> = ignored.unwrap_or_else(|| {
@@ -491,7 +497,7 @@ fn search_in_files_inner(
     collect_files_recursive(root, &ignored_patterns, &mut full_paths, 0)?;
 
     if full_paths.is_empty() {
-        return Ok(Vec::new());
+        return Ok(SearchResults { results: Vec::new(), truncated: false });
     }
 
     let query_lower: Vec<u8> = query.bytes().map(|b| b.to_ascii_lowercase()).collect();
@@ -570,8 +576,9 @@ fn search_in_files_inner(
         }
     });
 
+    let truncated = results.len() >= max_results;
     results.truncate(max_results);
-    Ok(results)
+    Ok(SearchResults { results, truncated })
 }
 
 #[tauri::command]

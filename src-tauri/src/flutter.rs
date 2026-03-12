@@ -110,7 +110,7 @@ pub fn list_emulators() -> Result<Vec<Emulator>, String> {
 fn is_safe_emulator_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 256
-        && id.chars().all(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | '.' | ' '))
+        && id.chars().all(|c| c.is_alphanumeric() || matches!(c, '-' | '_' | '.'))
 }
 
 #[tauri::command]

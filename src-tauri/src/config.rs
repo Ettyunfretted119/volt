@@ -3,9 +3,12 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 static CONFIG_CACHE: std::sync::LazyLock<Mutex<Option<VoltConfig>>> =
     std::sync::LazyLock::new(|| Mutex::new(None));
+
+static CONFIG_RECOVERED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -193,6 +196,7 @@ pub fn load_config() -> Result<VoltConfig, String> {
             let backup = path.with_extension("json.bak");
             let _ = fs::copy(&path, &backup);
             eprintln!("Warning: config.json was corrupt, backed up to config.json.bak");
+            CONFIG_RECOVERED.store(true, Ordering::Relaxed);
             VoltConfig::default()
         }
     };
@@ -237,4 +241,9 @@ pub fn save_config(mut config: VoltConfig) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn check_config_health() -> bool {
+    CONFIG_RECOVERED.swap(false, Ordering::Relaxed)
 }

@@ -1000,8 +1000,41 @@ function renderRecents() {
 }
 
 // ── Init ──
+function showWarningToast(message) {
+  const el = document.createElement('div');
+  el.className = 'undo-toast';
+  const msg = document.createElement('span');
+  msg.className = 'undo-toast-message';
+  msg.textContent = message;
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'undo-toast-dismiss';
+  closeBtn.textContent = '\u00d7';
+  const timer = document.createElement('div');
+  timer.className = 'undo-toast-timer';
+  timer.style.animationDuration = '8s';
+  el.appendChild(msg);
+  el.appendChild(closeBtn);
+  el.appendChild(timer);
+  document.body.appendChild(el);
+  const dismiss = () => {
+    el.classList.add('dismissing');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  };
+  closeBtn.addEventListener('click', dismiss);
+  setTimeout(dismiss, 8000);
+}
+
 async function init() {
   await loadConfig();
+
+  // Check if config was recovered from corruption
+  try {
+    const recovered = await invoke('check_config_health');
+    if (recovered) {
+      console.warn('Config was corrupt — backed up to config.json.bak, using defaults');
+      showWarningToast('Config was corrupt — backed up to config.json.bak, using defaults');
+    }
+  } catch (e) { console.warn('Failed to check config health:', e); }
 
   initKeyboardShortcuts();
   initSidebarResize();

@@ -49,6 +49,9 @@
   --border: #222222;
   --border-subtle: #2a2a2a;
   --scrollbar: #3a3a44;
+  --text-dim: #aaa;
+  --text-placeholder: #7a7a8a;
+  --bg-elevated: #1e1e1e;
   --error: #f44747;
   --git-modified: #e2c08d;
   --git-added: #73c991;
@@ -605,7 +608,7 @@ button:hover {
 }
 .tab:hover {
   color: var(--text);
-  background: #1e1e1e;
+  background: var(--bg-elevated);
 }
 .tab.active {
   background: var(--bg);
@@ -630,7 +633,7 @@ button:hover {
   color: var(--text-secondary);
 }
 .tab.active .tab-icon {
-  color: #aaaaaa;
+  color: var(--text-dim);
 }
 .tab-icon-img {
   width: 14px;
@@ -710,7 +713,7 @@ button:hover {
   letter-spacing: 0.3px;
 }
 .empty-state span {
-  color: #333;
+  color: var(--text-placeholder);
 }
 /* xterm.js overrides for Volt theme */
 .terminal-wrapper .xterm {
@@ -1683,7 +1686,7 @@ button:hover {
 
 /* Inline code */
 .md-preview code {
-  background: #1e1e1e;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 2px 6px;
@@ -1727,7 +1730,7 @@ button:hover {
   margin: 16px 0;
   padding: 8px 16px;
   background: rgba(180, 93, 255, 0.03);
-  color: #aaaaaa;
+  color: var(--text-dim);
 }
 .md-preview blockquote p:last-child {
   margin-bottom: 0;
@@ -1922,7 +1925,7 @@ button:hover {
   outline: none;
 }
 #quick-open-input::placeholder {
-  color: #555;
+  color: var(--text-placeholder);
 }
 #quick-open-results {
   max-height: 340px;
@@ -2012,12 +2015,12 @@ button:hover {
   outline: none;
 }
 #search-input::placeholder {
-  color: #555;
+  color: var(--text-placeholder);
 }
 #search-close {
   padding: 8px 14px;
   font-size: 18px;
-  color: #555;
+  color: var(--text-placeholder);
   flex-shrink: 0;
 }
 #search-close:hover {
@@ -2090,7 +2093,7 @@ button:hover {
   font-size: 11px;
 }
 .search-line-content {
-  color: #aaa;
+  color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2141,7 +2144,7 @@ button:hover {
   transition: color 0.15s;
 }
 .cm-search label:hover {
-  color: #aaaaaa;
+  color: var(--text-dim);
 }
 
 .cm-search input[type="checkbox"] {
@@ -2248,7 +2251,7 @@ button:hover {
   bottom: 36px;
   left: 50%;
   transform: translateX(-50%) translateY(0);
-  background: #1e1e1e;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   padding: 8px 14px;

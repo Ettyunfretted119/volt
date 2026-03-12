@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/nicbarker/tauri/refs/heads/v2/crates/tauri-config-schema/schema.json",
   "productName": "Volt",
   "version": "0.2.3",
   "identifier": "com.uforia.volt",

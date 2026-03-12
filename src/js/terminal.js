@@ -397,6 +397,8 @@ function renderTabs() {
     const typeClass = tab.type === 'file' ? ' tab-file' : ' tab-terminal';
     tabEl.className = `tab${typeClass}${tab.id === activeTabId ? ' active' : ''}`;
     tabEl.dataset.tabId = tab.id;
+    tabEl.setAttribute('role', 'tab');
+    tabEl.setAttribute('aria-selected', tab.id === activeTabId ? 'true' : 'false');
 
     // Tab icon
     const tabIcon = document.createElement('span');

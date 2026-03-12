@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 const statusResources = document.getElementById('status-resources');
 let statsInterval = null;
+let isFirstPoll = true;
 
 export function initStatusBar() {
   updateStats();
@@ -25,7 +26,9 @@ async function updateStats() {
     const stats = await invoke('get_system_stats');
     const ram = Math.round(stats.ram_mb);
     const cpu = Math.round(stats.cpu_percent);
-    statusResources.textContent = `RAM: ${ram} MB | CPU: ${cpu}%`;
+    const cpuDisplay = (isFirstPoll && cpu === 0) ? '--' : `${cpu}%`;
+    isFirstPoll = false;
+    statusResources.textContent = `RAM: ${ram} MB | CPU: ${cpuDisplay}`;
   } catch (e) {
     console.warn('Failed to fetch system stats:', e);
     statusResources.textContent = 'RAM: \u2014 | CPU: \u2014';

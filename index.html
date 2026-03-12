@@ -9,7 +9,7 @@
 <body>
   <div id="app">
     <!-- Sidebar -->
-    <aside id="sidebar">
+    <aside id="sidebar" aria-label="File explorer">
       <div id="sidebar-header">
         <span id="sidebar-title" title="Close Folder (Ctrl+Shift+O)"><img src="/src-tauri/icons/32x32.png" alt="" class="sidebar-logo">VOLT</span>
         <div id="sidebar-actions">
@@ -102,7 +102,7 @@
       </div>
 
       <!-- Tab bar -->
-      <div id="tab-bar">
+      <div id="tab-bar" role="tablist">
         <div id="tab-list"></div>
         <button id="btn-new-tab" title="New Terminal (Ctrl+Shift+T)">+</button>
       </div>
@@ -127,7 +127,7 @@
   </div>
 
   <!-- Quick Open overlay -->
-  <div id="quick-open" class="hidden">
+  <div id="quick-open" class="hidden" role="dialog" aria-label="Quick open" aria-modal="true">
     <div class="qo-backdrop"></div>
     <div class="qo-dialog">
       <input type="text" id="quick-open-input" placeholder="Go to file..." autocomplete="off" />
@@ -136,7 +136,7 @@
   </div>
 
   <!-- Search overlay -->
-  <div id="search-panel" class="hidden">
+  <div id="search-panel" class="hidden" role="dialog" aria-label="Search in files" aria-modal="true">
     <div class="search-backdrop"></div>
     <div class="search-dialog">
       <div class="search-header">
@@ -149,7 +149,7 @@
   </div>
 
   <!-- Status bar -->
-  <footer id="status-bar">
+  <footer id="status-bar" role="status">
     <div id="status-left">
       <span id="status-lint" class="status-lint-group" title="No analysis active"></span>
       <span id="status-folder"></span>

@@ -99,6 +99,7 @@ async function restoreExpandedPaths(expandedSet) {
     chevron.classList.add('expanded');
     chevron.textContent = '▾';
     children.classList.add('expanded');
+    item.setAttribute('aria-expanded', 'true');
     if (folderImg) folderImg.src = resolveFolderIcon(folderName, true);
 
     // Load children if not yet loaded
@@ -284,10 +285,12 @@ function renderEntries(container, entries, depth) {
   for (const entry of entries) {
     const item = document.createElement('div');
     item.className = 'tree-item';
+    item.setAttribute('role', 'treeitem');
     item.style.paddingLeft = `${8 + depth * 16}px`;
     item.dataset.path = entry.path;
     item.dataset.name = entry.name.toLowerCase();
     item.dataset.isDir = entry.is_dir;
+    if (entry.is_dir) item.setAttribute('aria-expanded', 'false');
 
     const chevron = document.createElement('span');
     chevron.className = entry.is_dir ? 'tree-chevron' : 'tree-chevron file-spacer';
@@ -345,11 +348,13 @@ function renderEntries(container, entries, depth) {
           chevron.classList.remove('expanded');
           chevron.textContent = '▸';
           children.classList.remove('expanded');
+          item.setAttribute('aria-expanded', 'false');
           if (folderImg) folderImg.src = resolveFolderIcon(entry.name, false);
         } else {
           chevron.classList.add('expanded');
           chevron.textContent = '▾';
           children.classList.add('expanded');
+          item.setAttribute('aria-expanded', 'true');
           if (folderImg) folderImg.src = resolveFolderIcon(entry.name, true);
 
           // Lazy load
@@ -586,7 +591,8 @@ function showContextMenu(e, entry) {
 
     // Open in File Manager
     addMenuItem(menu, 'Open in File Manager', () => {
-      invoke('open_in_file_manager', { path: entry.path });
+      invoke('open_in_file_manager', { path: entry.path })
+        .catch(err => console.warn('Failed to open file manager:', err));
     });
   }
 

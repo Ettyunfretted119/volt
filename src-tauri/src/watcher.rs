@@ -1,17 +1,16 @@
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 
 pub struct FileWatcherState {
     watcher: Option<RecommendedWatcher>,
-    watched: HashSet<PathBuf>,
+    watched: Vec<PathBuf>,
 }
 
 impl FileWatcherState {
     pub fn new(app_handle: AppHandle) -> Self {
-        let watcher = RecommendedWatcher::new(
+        let watcher = match RecommendedWatcher::new(
             move |res: Result<Event, notify::Error>| {
                 if let Ok(event) = res {
                     if matches!(
@@ -26,12 +25,17 @@ impl FileWatcherState {
                 }
             },
             notify::Config::default(),
-        )
-        .ok();
+        ) {
+            Ok(w) => Some(w),
+            Err(e) => {
+                eprintln!("Warning: failed to create file watcher: {}", e);
+                None
+            }
+        };
 
         Self {
             watcher,
-            watched: HashSet::new(),
+            watched: Vec::new(),
         }
     }
 }
@@ -72,7 +76,7 @@ fn is_noisy_path(path: &std::path::Path) -> bool {
 
 impl DirWatcherState {
     pub fn new(app_handle: AppHandle) -> Self {
-        let watcher = RecommendedWatcher::new(
+        let watcher = match RecommendedWatcher::new(
             move |res: Result<Event, notify::Error>| {
                 if let Ok(event) = res {
                     if matches!(
@@ -90,8 +94,13 @@ impl DirWatcherState {
                 }
             },
             notify::Config::default(),
-        )
-        .ok();
+        ) {
+            Ok(w) => Some(w),
+            Err(e) => {
+                eprintln!("Warning: failed to create directory watcher: {}", e);
+                None
+            }
+        };
 
         Self {
             watcher,
@@ -113,15 +122,23 @@ pub fn watch_file(
         return Ok(());
     }
     if s.watched.len() >= MAX_WATCHES {
-        return Err("Maximum file watch limit reached".to_string());
+        if let Some(oldest) = s.watched.first().cloned() {
+            if let Some(watcher) = &mut s.watcher {
+                let _ = watcher.unwatch(&oldest);
+            }
+            s.watched.remove(0);
+        }
     }
-    if let Some(watcher) = &mut s.watcher {
-        watcher
-            .watch(&p, RecursiveMode::NonRecursive)
-            .map_err(|e| format!("Watch failed: {}", e))?;
-        s.watched.insert(p);
+    match &mut s.watcher {
+        Some(watcher) => {
+            watcher
+                .watch(&p, RecursiveMode::NonRecursive)
+                .map_err(|e| format!("Watch failed: {}", e))?;
+            s.watched.push(p);
+            Ok(())
+        }
+        None => Err("File watcher unavailable".to_string()),
     }
-    Ok(())
 }
 
 #[tauri::command]
@@ -134,7 +151,7 @@ pub fn unwatch_file(
     if let Some(watcher) = &mut s.watcher {
         let _ = watcher.unwatch(&p);
     }
-    s.watched.remove(&p);
+    s.watched.retain(|x| x != &p);
     Ok(())
 }
 
@@ -143,7 +160,7 @@ pub fn unwatch_all_files(
     state: tauri::State<'_, Mutex<FileWatcherState>>,
 ) -> Result<(), String> {
     let mut s = state.lock().map_err(|e| e.to_string())?;
-    let paths: Vec<PathBuf> = s.watched.drain().collect();
+    let paths: Vec<PathBuf> = s.watched.drain(..).collect();
     if let Some(watcher) = &mut s.watcher {
         for p in &paths {
             let _ = watcher.unwatch(p);
@@ -171,13 +188,16 @@ pub fn watch_directory(
         }
     }
 
-    if let Some(watcher) = &mut s.watcher {
-        watcher
-            .watch(&p, RecursiveMode::Recursive)
-            .map_err(|e| format!("Directory watch failed: {}", e))?;
-        s.watched_root = Some(p);
+    match &mut s.watcher {
+        Some(watcher) => {
+            watcher
+                .watch(&p, RecursiveMode::Recursive)
+                .map_err(|e| format!("Directory watch failed: {}", e))?;
+            s.watched_root = Some(p);
+            Ok(())
+        }
+        None => Err("Directory watcher unavailable".to_string()),
     }
-    Ok(())
 }
 
 #[tauri::command]

@@ -40,15 +40,18 @@ fn main() {
                     let _ = window.with_webview(|webview| unsafe {
                         use webview2_com::Microsoft::Web::WebView2::Win32::*;
                         use windows_core::Interface;
-                        let settings: ICoreWebView2Settings3 = webview
-                            .controller()
-                            .CoreWebView2()
-                            .unwrap()
-                            .Settings()
-                            .unwrap()
-                            .cast()
-                            .unwrap();
-                        let _ = settings.SetAreBrowserAcceleratorKeysEnabled(false);
+                        let result: Result<(), windows_core::Error> = (|| {
+                            let settings: ICoreWebView2Settings3 = webview
+                                .controller()
+                                .CoreWebView2()?
+                                .Settings()?
+                                .cast()?;
+                            let _ = settings.SetAreBrowserAcceleratorKeysEnabled(false);
+                            Ok(())
+                        })();
+                        if let Err(e) = result {
+                            eprintln!("Warning: failed to configure WebView2 settings: {}", e);
+                        }
                     });
                 }
             }
@@ -58,6 +61,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             config::load_config,
             config::save_config,
+            config::check_config_health,
             fs::read_directory,
             fs::open_in_file_manager,
             fs::read_file,

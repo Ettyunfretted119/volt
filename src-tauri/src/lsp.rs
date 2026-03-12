@@ -158,12 +158,14 @@ fn find_dart_executable() -> Option<String> {
 /// Resolve the binary path and args for a language server.
 fn resolve_server_binary(server: &BuiltinServer) -> Option<(String, Vec<String>)> {
     // Check user config for overrides first
-    if let Ok(config) = crate::config::load_config() {
-        if let Some(user_override) = config.lsp_servers.get(server.id) {
-            return Some((
-                user_override.command.clone(),
-                user_override.args.clone(),
-            ));
+    match crate::config::load_config() {
+        Ok(config) => {
+            if let Some(user_override) = config.lsp_servers.get(server.id) {
+                return Some((user_override.command.clone(), user_override.args.clone()));
+            }
+        }
+        Err(e) => {
+            eprintln!("Warning: failed to load config for LSP overrides: {}", e);
         }
     }
 

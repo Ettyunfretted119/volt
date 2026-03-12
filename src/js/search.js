@@ -54,13 +54,13 @@ async function doSearch() {
 
   const thisGen = ++searchGeneration;
   try {
-    const results = await invoke('search_in_files', {
+    const response = await invoke('search_in_files', {
       path: currentProject,
       query,
       ignored: currentIgnored,
     });
     if (thisGen !== searchGeneration) return; // Superseded by newer search
-    renderResults(results, query);
+    renderResults(response.results, query, response.truncated);
   } catch (e) {
     if (thisGen !== searchGeneration) return;
     console.warn('Search failed:', e);
@@ -68,7 +68,7 @@ async function doSearch() {
   }
 }
 
-function renderResults(results, query) {
+function renderResults(results, query, truncated) {
   resultsEl.innerHTML = '';
 
   if (results.length === 0) {
@@ -76,7 +76,7 @@ function renderResults(results, query) {
     return;
   }
 
-  statusEl.textContent = `${results.length}${results.length >= 200 ? '+' : ''} results`;
+  statusEl.textContent = `${results.length}${truncated ? '+' : ''} results`;
 
   // Group by file
   const groups = new Map();
@@ -84,6 +84,8 @@ function renderResults(results, query) {
     if (!groups.has(r.path)) groups.set(r.path, []);
     groups.get(r.path).push(r);
   }
+
+  const fragment = document.createDocumentFragment();
 
   for (const [, matches] of groups) {
     const group = document.createElement('div');
@@ -148,6 +150,8 @@ function renderResults(results, query) {
       group.appendChild(row);
     }
 
-    resultsEl.appendChild(group);
+    fragment.appendChild(group);
   }
+
+  resultsEl.appendChild(fragment);
 }

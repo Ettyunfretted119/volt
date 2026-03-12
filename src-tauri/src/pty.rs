@@ -202,8 +202,13 @@ pub fn resize_terminal(id: String, cols: u16, rows: u16) -> Result<(), String> {
     if cols == 0 || rows == 0 {
         return Ok(());
     }
-    let cols = cols.min(500);
-    let rows = rows.min(200);
+    let clamped_cols = cols.min(500);
+    let clamped_rows = rows.min(200);
+    if clamped_cols != cols || clamped_rows != rows {
+        eprintln!("Warning: terminal resize clamped from {}x{} to {}x{}", cols, rows, clamped_cols, clamped_rows);
+    }
+    let cols = clamped_cols;
+    let rows = clamped_rows;
 
     let master = {
         let registry = PTY_REGISTRY.lock().map_err(|e| format!("Lock error: {}", e))?;
