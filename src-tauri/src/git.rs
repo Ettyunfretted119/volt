@@ -7,6 +7,8 @@ use std::process::Command;
 pub struct GitStatus {
     /// Map of relative path → status code ("M", "A", "D", "U", "?")
     pub files: HashMap<String, String>,
+    /// Relative paths of gitignored files/directories (dirs have trailing "/")
+    pub ignored: Vec<String>,
     /// The git repo root (so frontend can compute relative paths)
     pub root: String,
 }
@@ -22,10 +24,11 @@ fn find_git_root(start: &Path) -> Option<&Path> {
     }
 }
 
-/// Parse `git status --porcelain` output into a path → status map.
-/// Porcelain format: XY PATH (where X=index status, Y=worktree status)
-fn parse_porcelain(output: &str) -> HashMap<String, String> {
+/// Parse `git status --porcelain --ignored` output into a path → status map
+/// and a list of ignored paths. Porcelain format: XY PATH
+fn parse_porcelain(output: &str) -> (HashMap<String, String>, Vec<String>) {
     let mut map = HashMap::new();
+    let mut ignored = Vec::new();
     for line in output.lines() {
         if line.len() < 4 {
             continue;
@@ -34,6 +37,13 @@ fn parse_porcelain(output: &str) -> HashMap<String, String> {
         let work_status = line.as_bytes()[1];
         // Skip the space at position 2; path starts at position 3
         let path = &line[3..];
+
+        // Ignored files: !! prefix
+        if index_status == b'!' && work_status == b'!' {
+            ignored.push(path.to_string());
+            continue;
+        }
+
         // For renamed files, porcelain shows "old -> new" — take the new path
         let path = if let Some(arrow) = path.find(" -> ") {
             &path[arrow + 4..]
@@ -52,7 +62,7 @@ fn parse_porcelain(output: &str) -> HashMap<String, String> {
 
         map.insert(path.to_string(), status.to_string());
     }
-    map
+    (map, ignored)
 }
 
 #[tauri::command]
@@ -67,8 +77,7 @@ fn git_status_inner(path: &str) -> Result<GitStatus, String> {
     let git_root = find_git_root(dir).ok_or_else(|| "Not a git repository".to_string())?;
 
     let output = Command::new("git")
-        .arg("status")
-        .arg("--porcelain")
+        .args(["status", "--porcelain", "--ignored"])
         .current_dir(git_root)
         .output()
         .map_err(|e| format!("Failed to run git: {}", e))?;
@@ -79,10 +88,11 @@ fn git_status_inner(path: &str) -> Result<GitStatus, String> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let files = parse_porcelain(&stdout);
+    let (files, ignored) = parse_porcelain(&stdout);
 
     Ok(GitStatus {
         files,
+        ignored,
         root: git_root.to_string_lossy().to_string(),
     })
 }
@@ -93,61 +103,72 @@ mod tests {
 
     #[test]
     fn test_parse_porcelain_empty() {
-        let result = parse_porcelain("");
-        assert!(result.is_empty());
+        let (files, ignored) = parse_porcelain("");
+        assert!(files.is_empty());
+        assert!(ignored.is_empty());
     }
 
     #[test]
     fn test_parse_porcelain_modified() {
-        let result = parse_porcelain(" M src/main.rs\n");
-        assert_eq!(result.get("src/main.rs").map(|s| s.as_str()), Some("M"));
+        let (files, _) = parse_porcelain(" M src/main.rs\n");
+        assert_eq!(files.get("src/main.rs").map(|s| s.as_str()), Some("M"));
     }
 
     #[test]
     fn test_parse_porcelain_staged_modified() {
-        let result = parse_porcelain("M  src/lib.rs\n");
-        assert_eq!(result.get("src/lib.rs").map(|s| s.as_str()), Some("M"));
+        let (files, _) = parse_porcelain("M  src/lib.rs\n");
+        assert_eq!(files.get("src/lib.rs").map(|s| s.as_str()), Some("M"));
     }
 
     #[test]
     fn test_parse_porcelain_added() {
-        let result = parse_porcelain("A  new_file.txt\n");
-        assert_eq!(result.get("new_file.txt").map(|s| s.as_str()), Some("A"));
+        let (files, _) = parse_porcelain("A  new_file.txt\n");
+        assert_eq!(files.get("new_file.txt").map(|s| s.as_str()), Some("A"));
     }
 
     #[test]
     fn test_parse_porcelain_deleted() {
-        let result = parse_porcelain(" D removed.txt\n");
-        assert_eq!(result.get("removed.txt").map(|s| s.as_str()), Some("D"));
+        let (files, _) = parse_porcelain(" D removed.txt\n");
+        assert_eq!(files.get("removed.txt").map(|s| s.as_str()), Some("D"));
     }
 
     #[test]
     fn test_parse_porcelain_untracked() {
-        let result = parse_porcelain("?? untracked.txt\n");
-        assert_eq!(result.get("untracked.txt").map(|s| s.as_str()), Some("U"));
+        let (files, _) = parse_porcelain("?? untracked.txt\n");
+        assert_eq!(files.get("untracked.txt").map(|s| s.as_str()), Some("U"));
     }
 
     #[test]
     fn test_parse_porcelain_renamed() {
-        let result = parse_porcelain("R  old.txt -> new.txt\n");
-        assert_eq!(result.get("new.txt").map(|s| s.as_str()), Some("M"));
-        assert!(result.get("old.txt").is_none());
+        let (files, _) = parse_porcelain("R  old.txt -> new.txt\n");
+        assert_eq!(files.get("new.txt").map(|s| s.as_str()), Some("M"));
+        assert!(files.get("old.txt").is_none());
     }
 
     #[test]
     fn test_parse_porcelain_multiple() {
         let output = " M file1.rs\nA  file2.rs\n?? file3.rs\n D file4.rs\n";
-        let result = parse_porcelain(output);
-        assert_eq!(result.len(), 4);
-        assert_eq!(result["file1.rs"], "M");
-        assert_eq!(result["file2.rs"], "A");
-        assert_eq!(result["file3.rs"], "U");
-        assert_eq!(result["file4.rs"], "D");
+        let (files, _) = parse_porcelain(output);
+        assert_eq!(files.len(), 4);
+        assert_eq!(files["file1.rs"], "M");
+        assert_eq!(files["file2.rs"], "A");
+        assert_eq!(files["file3.rs"], "U");
+        assert_eq!(files["file4.rs"], "D");
     }
 
     #[test]
     fn test_parse_porcelain_short_line_ignored() {
-        let result = parse_porcelain("ab\n");
-        assert!(result.is_empty());
+        let (files, _) = parse_porcelain("ab\n");
+        assert!(files.is_empty());
+    }
+
+    #[test]
+    fn test_parse_porcelain_ignored() {
+        let output = "!! dist/\n!! CLAUDE.md\n M src/main.rs\n";
+        let (files, ignored) = parse_porcelain(output);
+        assert_eq!(files.len(), 1);
+        assert_eq!(ignored.len(), 2);
+        assert_eq!(ignored[0], "dist/");
+        assert_eq!(ignored[1], "CLAUDE.md");
     }
 }

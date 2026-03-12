@@ -311,6 +311,12 @@ button:hover {
 .git-badge.git-added { color: var(--git-added); }
 .git-badge.git-deleted { color: var(--git-deleted); }
 
+/* Gitignored files/folders: dimmed like VSCode */
+.tree-item.gitignored > .tree-name,
+.tree-item.gitignored > .tree-icon {
+  opacity: 0.5;
+}
+
 /* Dot indicator for folders with dirty children */
 .git-dot {
   margin-left: auto;

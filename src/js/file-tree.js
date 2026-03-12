@@ -18,6 +18,8 @@ let gitStatusMap = {};
 let gitRoot = null;
 // Pre-computed set of dirty directory prefixes for O(1) folder status lookups
 let dirtyDirs = new Set();
+// Set of gitignored relative paths (dirs have trailing "/")
+let gitIgnoredSet = new Set();
 
 // Guard against concurrent loadDirectory calls (race condition → duplicate entries)
 let loadGeneration = 0;
@@ -145,11 +147,13 @@ export async function loadDirectory(path, preserveState = false) {
     gitStatusMap = result.files;
     gitRoot = result.root;
     rebuildDirtyDirs();
+    rebuildIgnoredSet(result.ignored || []);
   }).catch(e => {
     console.warn('Failed to fetch git status:', e);
     gitStatusMap = {};
     gitRoot = null;
     dirtyDirs.clear();
+    gitIgnoredSet.clear();
   });
 
   try {
@@ -191,11 +195,13 @@ export async function refreshGitStatus() {
     gitStatusMap = result.files;
     gitRoot = result.root;
     rebuildDirtyDirs();
+    rebuildIgnoredSet(result.ignored || []);
   } catch (e) {
     console.warn('Failed to refresh git status:', e);
     gitStatusMap = {};
     gitRoot = null;
     dirtyDirs.clear();
+    gitIgnoredSet.clear();
   }
   applyGitStatusToTree();
 }
@@ -225,6 +231,39 @@ function rebuildDirtyDirs() {
   }
 }
 
+/// Build the set of gitignored paths. Git returns relative paths from repo root;
+/// dirs have trailing "/". We also expand parent dirs so "src-tauri/gen/" marks
+/// "src-tauri/gen" as ignored too.
+function rebuildIgnoredSet(ignoredPaths) {
+  gitIgnoredSet.clear();
+  for (const p of ignoredPaths) {
+    // Store both with and without trailing slash for matching
+    gitIgnoredSet.add(p);
+    if (p.endsWith('/')) {
+      gitIgnoredSet.add(p.slice(0, -1));
+    }
+  }
+}
+
+function isGitIgnored(entryPath) {
+  if (!gitRoot || gitIgnoredSet.size === 0) return false;
+  const normalized = entryPath.replace(/\\/g, '/');
+  const root = gitRoot.replace(/\\/g, '/');
+  if (!normalized.startsWith(root + '/')) return false;
+  const relative = normalized.slice(root.length + 1);
+  // Check exact match (file or dir without trailing slash)
+  if (gitIgnoredSet.has(relative)) return true;
+  // Check as directory (with trailing slash)
+  if (gitIgnoredSet.has(relative + '/')) return true;
+  // Check if any parent directory is ignored (e.g. "dist/assets/foo.js" when "dist/" is ignored)
+  const parts = relative.split('/');
+  for (let i = 1; i < parts.length; i++) {
+    const prefix = parts.slice(0, i).join('/');
+    if (gitIgnoredSet.has(prefix) || gitIgnoredSet.has(prefix + '/')) return true;
+  }
+  return false;
+}
+
 function getFolderGitStatus(entryPath) {
   if (!gitRoot || dirtyDirs.size === 0) return null;
   const normalized = entryPath.replace(/\\/g, '/');
@@ -247,6 +286,9 @@ function applyGitStatusToTree() {
     // Remove old badge and color
     if (badge) badge.remove();
     if (nameEl) nameEl.classList.remove('git-modified', 'git-untracked', 'git-added', 'git-deleted');
+
+    // Update gitignored state
+    item.classList.toggle('gitignored', isGitIgnored(path));
 
     if (isDir) {
       const dirty = getFolderGitStatus(path);
@@ -315,6 +357,11 @@ function renderEntries(container, entries, depth) {
     item.appendChild(chevron);
     item.appendChild(icon);
     item.appendChild(name);
+
+    // Dim gitignored entries
+    if (isGitIgnored(entry.path)) {
+      item.classList.add('gitignored');
+    }
 
     // Git status indicators
     if (entry.is_dir) {
