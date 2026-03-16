@@ -320,7 +320,7 @@ button:hover {
 /* Dot indicator for folders with dirty children */
 .git-dot {
   margin-left: auto;
-  padding-left: 8px;
+  margin-right: 4px;
   flex-shrink: 0;
   width: 6px;
   height: 6px;

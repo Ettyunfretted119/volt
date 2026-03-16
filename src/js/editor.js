@@ -316,6 +316,14 @@ export async function createEditorView(content, language, wrapper, fontSize, onM
   view._voltWrapComp = wrapComp;
   view._voltWrapped = false;
 
+  // Enable word wrap by default for prose-oriented languages
+  if (language === 'markdown') {
+    view._voltWrapped = true;
+    view.dispatch({
+      effects: wrapComp.reconfigure(EditorView.lineWrapping),
+    });
+  }
+
   return view;
 }
 
