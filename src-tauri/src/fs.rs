@@ -667,9 +667,14 @@ pub fn open_url(url: String) -> Result<(), String> {
 
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", &url])
-            .spawn()
+        // Use explorer.exe directly instead of cmd.exe to avoid command injection.
+        // cmd /C start passes the URL through cmd's metacharacter interpreter,
+        // allowing crafted URLs to execute arbitrary commands.
+        let mut cmd = std::process::Command::new("explorer");
+        cmd.arg(&url);
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        cmd.spawn()
             .map_err(|e| format!("Failed to open URL: {}", e))?;
     }
 

@@ -1219,6 +1219,7 @@ async function init() {
   document.getElementById('btn-open-folder').addEventListener('click', () => openFolder());
   document.getElementById('btn-open-folder-large').addEventListener('click', () => openFolder());
   document.getElementById('btn-open-folder-welcome').addEventListener('click', () => openFolder());
+  // Hard refresh: intentionally collapses all folders (refreshTree() is the soft variant)
   document.getElementById('btn-refresh-tree').addEventListener('click', () => {
     if (currentFolder) loadDirectory(currentFolder);
   });

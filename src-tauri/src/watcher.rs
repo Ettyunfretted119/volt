@@ -66,6 +66,7 @@ fn is_noisy_path(path: &std::path::Path) -> bool {
             let s = s.to_string_lossy();
             if IGNORED_SEGMENTS.contains(&s.as_ref())
                 || s.ends_with(".volt-swap")
+                || s.ends_with(".volt-tmp")
             {
                 return true;
             }

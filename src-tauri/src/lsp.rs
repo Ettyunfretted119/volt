@@ -206,6 +206,10 @@ struct LspState {
     initialized: bool,
     pending_messages: Vec<serde_json::Value>,
     document_versions: std::collections::HashMap<String, i32>,
+    /// Monotonically increasing counter that invalidates stale reader threads.
+    /// Incremented each time the analyzer is stopped or restarted so old reader
+    /// threads can detect they belong to a defunct session and bail out.
+    generation: u64,
 }
 
 static LSP: std::sync::LazyLock<Mutex<LspState>> =
@@ -216,6 +220,7 @@ static LSP: std::sync::LazyLock<Mutex<LspState>> =
         initialized: false,
         pending_messages: Vec::new(),
         document_versions: std::collections::HashMap::new(),
+        generation: 0,
     }));
 
 fn next_request_id() -> Result<u64, String> {
@@ -410,11 +415,15 @@ pub fn start_analyzer(app: AppHandle, project_path: String) -> Result<Option<Str
     let stdout = child.stdout.take()
         .ok_or("Failed to get LSP stdout")?;
 
+    let session_generation;
     {
         let mut state = LSP.lock().map_err(|e| format!("Lock error: {}", e))?;
         state.process = Some(child);
         state.writer = Some(Box::new(stdin));
         state.request_id = 0;
+        state.initialized = false;
+        state.pending_messages.clear();
+        session_generation = state.generation;
     }
 
     // Send LSP initialize request
@@ -455,6 +464,7 @@ pub fn start_analyzer(app: AppHandle, project_path: String) -> Result<Option<Str
     let read_app = app.clone();
     let root_path = project_path.clone();
     let expected_init_id = init_id;
+    let my_generation = session_generation;
     thread::spawn(move || {
         let mut reader = BufReader::new(stdout);
         let mut initialized = false;
@@ -515,6 +525,11 @@ pub fn start_analyzer(app: AppHandle, project_path: String) -> Result<Option<Str
                         "params": {}
                     });
                     if let Ok(mut state) = LSP.lock() {
+                        // Bail out if the analyzer was restarted — this reader
+                        // belongs to a defunct session and must not touch state.
+                        if state.generation != my_generation {
+                            return;
+                        }
                         if let Some(ref mut writer) = state.writer {
                             let _ = send_lsp_message(writer.as_mut(), &notif);
                         }
@@ -600,6 +615,7 @@ fn stop_analyzer_internal() -> Result<(), String> {
     state.initialized = false;
     state.pending_messages.clear();
     state.document_versions.clear();
+    state.generation += 1;
 
     Ok(())
 }
