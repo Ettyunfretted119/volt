@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { escapeHtml, escapeAttr } from './utils.js';
 
 let emulators = [];
@@ -26,6 +27,11 @@ export function initEmulator() {
     if (dropdownVisible && !dropdownEl.contains(e.target) && e.target !== emulatorBtn) {
       hideDropdown();
     }
+  });
+
+  // Reset button text when the emulator process exits
+  listen('emulator-exited', () => {
+    emulatorBtn.textContent = 'No Device';
   });
 }
 

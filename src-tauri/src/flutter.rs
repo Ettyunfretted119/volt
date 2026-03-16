@@ -1,6 +1,8 @@
 use serde::Serialize;
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::thread;
+use tauri::{AppHandle, Emitter};
 
 // ── Helpers ──
 
@@ -114,11 +116,12 @@ fn is_safe_emulator_id(id: &str) -> bool {
 }
 
 #[tauri::command]
-pub fn launch_emulator(id: String, cold: Option<bool>) -> Result<(), String> {
+pub fn launch_emulator(app: AppHandle, id: String, cold: Option<bool>) -> Result<(), String> {
     if !is_safe_emulator_id(&id) {
         return Err("Invalid emulator ID".to_string());
     }
-    if cold.unwrap_or(false) {
+
+    let child = if cold.unwrap_or(false) {
         // Cold boot: use Android emulator directly with -no-snapshot-load
         let android_home = std::env::var("ANDROID_HOME")
             .or_else(|_| std::env::var("ANDROID_SDK_ROOT"))
@@ -131,32 +134,34 @@ pub fn launch_emulator(id: String, cold: Option<bool>) -> Result<(), String> {
             "emulator".to_string()
         };
 
+        let mut cmd = Command::new(&emulator_path);
+        cmd.args(["-avd", &id, "-no-snapshot-load"])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+
         #[cfg(target_os = "windows")]
         {
-            let mut cmd = Command::new(&emulator_path);
-            cmd.args(["-avd", &id, "-no-snapshot-load"]);
             use std::os::windows::process::CommandExt;
             cmd.creation_flags(0x08000000);
-            cmd.stdout(Stdio::null()).stderr(Stdio::null())
-                .spawn()
-                .map_err(|e| format!("Failed to cold boot emulator: {}", e))?;
         }
 
-        #[cfg(not(target_os = "windows"))]
-        {
-            Command::new(&emulator_path)
-                .args(["-avd", &id, "-no-snapshot-load"])
-                .stdout(Stdio::null()).stderr(Stdio::null())
-                .spawn()
-                .map_err(|e| format!("Failed to cold boot emulator: {}", e))?;
-        }
+        cmd.spawn()
+            .map_err(|e| format!("Failed to cold boot emulator: {}", e))?
     } else {
         bat_command("flutter", &["emulators", "--launch", &id])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .map_err(|e| format!("Failed to launch emulator: {}", e))?;
-    }
+            .map_err(|e| format!("Failed to launch emulator: {}", e))?
+    };
+
+    // Wait for the emulator process to exit in a background thread
+    // and notify the frontend so it can reset the status bar button.
+    thread::spawn(move || {
+        let mut child = child;
+        let _ = child.wait();
+        let _ = app.emit("emulator-exited", ());
+    });
 
     Ok(())
 }
