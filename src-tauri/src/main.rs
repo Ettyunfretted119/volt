@@ -56,6 +56,22 @@ fn main() {
                 }
             }
 
+            // Make the WKWebView the first responder so keyboard events
+            // (arrow keys, backspace, delete) reach JavaScript/xterm.js
+            // instead of being swallowed by the native macOS responder chain.
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.with_webview(|webview| {
+                        use objc2_app_kit::NSView;
+                        let ns_view: &NSView = unsafe { &*(webview.inner().cast()) };
+                        if let Some(ns_window) = ns_view.window() {
+                            ns_window.makeFirstResponder(Some(ns_view));
+                        }
+                    });
+                }
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
